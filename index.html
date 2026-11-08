@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yawar Mahmood</title>
+<meta name="description" content="Yawar Mahmood – AI engineer and data scientist building ML systems that run in production.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fbfaf7;
+    --surface: #ffffff;
+    --text: #1f2328;
+    --muted: #5f6670;
+    --accent: #1a4d6d;
+    --accent-soft: #e6eef3;
+    --rule: #e3e1db;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12161a;
+      --surface: #191f24;
+      --text: #e6e8ea;
+      --muted: #9aa3ab;
+      --accent: #7fb3d5;
+      --accent-soft: #1e2d38;
+      --rule: #2a3138;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.65 Inter, system-ui, -apple-system, sans-serif;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+
+  header { padding: 72px 0 40px; }
+  h1 {
+    font-family: "Source Serif 4", Georgia, serif;
+    font-size: clamp(2.2rem, 6vw, 3.2rem);
+    line-height: 1.1;
+    margin: 0 0 12px;
+    letter-spacing: -0.01em;
+  }
+  .tagline { color: var(--muted); font-size: 1.1rem; margin: 0 0 24px; }
+  .intro { font-size: 1.08rem; max-width: 640px; }
+  .links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+  .btn {
+    display: inline-block;
+    padding: 9px 16px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+  .btn:hover { border-color: var(--accent); text-decoration: none; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+
+  section { padding: 36px 0; border-top: 1px solid var(--rule); }
+  h2 {
+    font-family: "Source Serif 4", Georgia, serif;
+    font-size: 1.5rem;
+    margin: 0 0 22px;
+    color: var(--accent);
+  }
+  .job { margin-bottom: 30px; }
+  .job:last-child { margin-bottom: 0; }
+  .job-head { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 16px; }
+  .job h3 { font-size: 1.05rem; margin: 0; font-weight: 600; }
+  .when { color: var(--muted); font-size: 0.92rem; white-space: nowrap; }
+  .org { color: var(--muted); font-style: italic; margin: 2px 0 8px; }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin-bottom: 6px; }
+
+  .highlights { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .card .num { font-family: "Source Serif 4", Georgia, serif; font-size: 1.8rem; font-weight: 700; color: var(--accent); line-height: 1.2; }
+  .card p { margin: 4px 0 0; color: var(--muted); font-size: 0.93rem; line-height: 1.5; }
+
+  .skills { display: grid; gap: 12px; }
+  .skill-row { display: grid; grid-template-columns: 130px 1fr; gap: 12px; }
+  .skill-row b { font-weight: 600; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { background: var(--accent-soft); color: var(--text); border-radius: 6px; padding: 2px 9px; font-size: 0.88rem; }
+
+  footer { padding: 36px 0 56px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.92rem; }
+
+  @media (max-width: 560px) {
+    header { padding-top: 48px; }
+    .skill-row { grid-template-columns: 1fr; gap: 6px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Yawar Mahmood</h1>
+    <p class="tagline">AI Engineer · Data Scientist · Applied Mathematician</p>
+    <p class="intro">
+      I build ML systems that run in production: real-time computer vision live in retail stores,
+      LLM agents that automate document and business workflows, and a consumer app scaled to 20,000+ users.
+      M.Sc. in Industrial Mathematics &amp; Statistics from NTNU. Currently freelancing and open to new roles.
+    </p>
+    <div class="links">
+      <a class="btn primary" href="Yawar-Mahmood-CV.pdf" download>Download CV</a>
+      <a class="btn" href="mailto:yawar14@hotmail.com">Email</a>
+      <a class="btn" href="https://no.linkedin.com/in/yawar-mahmood-156917216" target="_blank" rel="noopener">LinkedIn</a>
+      <a class="btn" href="https://github.com/yawarm" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </header>
+
+  <section>
+    <h2>Highlights</h2>
+    <div class="highlights">
+      <div class="card"><div class="num">10 stores</div><p>Real-time self-checkout system live for NorgesGruppen on NVIDIA Jetson edge devices</p></div>
+      <div class="card"><div class="num">20,000+</div><p>Active users on the APIIR bike-fitting app, rated 4.5★ on the App Store</p></div>
+      <div class="card"><div class="num">$300K+</div><p>Funding secured as CPO of APIIR</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Experience</h2>
+
+    <div class="job">
+      <div class="job-head"><h3>Freelance AI Engineer</h3><span class="when">Jun 2026 – Present</span></div>
+      <div class="org">Self-employed</div>
+      <ul>
+        <li>Automating slow, manual business processes for a restaurant client, including bookkeeping, purchasing, and marketing workflows, using Python, LLMs, and API integrations</li>
+      </ul>
+    </div>
+
+    <div class="job">
+      <div class="job-head"><h3>AI Engineer</h3><span class="when">Mar 2025 – Jun 2026</span></div>
+      <div class="org">Astar Consulting · Oslo</div>
+      <ul>
+        <li>Developed a real-time self-checkout system for NorgesGruppen, now live in 10 stores on NVIDIA Jetson edge devices, built on NVIDIA DeepStream with anti-theft detection and Kalman filter-based multi-object tracking, tuned for in-store conditions</li>
+        <li>Fine-tuned DINOv3 with LoRA on augmented training data to cover rare products and difficult lighting conditions, improving accuracy of embedding-based product classification against a FAISS vector database of 10,000+ products</li>
+        <li>Built an agentic command-line system for Rapp Bomek with LangGraph and LangChain, where users give instructions in natural language and the agent carries out multi-step tasks on high-security door project documentation</li>
+        <li>Designed a multi-objective optimization engine for a startup, combining interpretable regression tree models with NSGA-II Pareto optimization to balance regulatory limits, CO₂ and cost in concrete recipes</li>
+      </ul>
+    </div>
+
+    <div class="job">
+      <div class="job-head"><h3>CPO, Full-Stack Developer &amp; Lead Data Scientist</h3><span class="when">Jun 2022 – Mar 2025</span></div>
+      <div class="org">APIIR · Trondheim</div>
+      <ul>
+        <li>Launched APIIR's B2C bike-fitting app from zero to 20,000+ active users across iOS &amp; Android, rated 4.5★ on the App Store</li>
+        <li>Designed proprietary fitting algorithms achieving centimeter-level precision, fusing pose estimation with biomechanical modeling</li>
+        <li>Secured $300K+ in funding and drove end-to-end product strategy including roadmap, user research, and go-to-market</li>
+        <li>Architected the full-stack platform (Flutter, Django, cloud infrastructure)</li>
+      </ul>
+    </div>
+
+    <div class="job">
+      <div class="job-head"><h3>Vice President &amp; Head of Web Committee</h3><span class="when">Mar 2021 – Mar 2023</span></div>
+      <div class="org">Nabla – NTNU Student Association for Physics &amp; Mathematics · Trondheim</div>
+      <ul>
+        <li>Owned the technical stack (website, IT operations, and digital services) for a 500+ member student organization</li>
+        <li>Co-led the board, responsible for strategy and member communications</li>
+        <li>Started and ran an office kiosk for members, and organized the association's 17 May breakfast end to end</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Education</h2>
+    <div class="job">
+      <div class="job-head"><h3>M.Sc. in Physics &amp; Mathematics</h3><span class="when">2020 – 2026</span></div>
+      <div class="org">NTNU · Specialization: Industrial Mathematics &amp; Statistics</div>
+      <ul>
+        <li><b>Thesis:</b> Bayesian spatio-temporal model (INLA) of bus ridership in Trondheim from 1.7M+ boarding records, with well-calibrated uncertainty (90% predictive intervals reached 92% coverage)</li>
+        <li><b>Award:</b> Best 1st Year Team, Nordic Collegiate Programming Contest (NCPC), 2020</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Skills</h2>
+    <div class="skills">
+      <div class="skill-row"><b>Languages</b><div class="tags"><span class="tag">Python</span><span class="tag">SQL</span><span class="tag">R</span><span class="tag">C++</span><span class="tag">Dart</span><span class="tag">JavaScript</span></div></div>
+      <div class="skill-row"><b>ML / AI</b><div class="tags"><span class="tag">PyTorch</span><span class="tag">Computer Vision</span><span class="tag">LLMs</span><span class="tag">LangGraph</span><span class="tag">AI Agents</span><span class="tag">RAG</span><span class="tag">Fine-tuning (LoRA)</span><span class="tag">NVIDIA DeepStream</span><span class="tag">Edge Deployment</span></div></div>
+      <div class="skill-row"><b>Engineering</b><div class="tags"><span class="tag">Django</span><span class="tag">FastAPI</span><span class="tag">Flutter</span><span class="tag">React</span><span class="tag">Docker</span><span class="tag">Azure</span><span class="tag">GCP</span></div></div>
+      <div class="skill-row"><b>Data</b><div class="tags"><span class="tag">PostgreSQL</span><span class="tag">MongoDB</span><span class="tag">FAISS</span><span class="tag">pandas</span><span class="tag">REST APIs</span></div></div>
+      <div class="skill-row"><b>Spoken</b><div class="tags"><span class="tag">Norwegian (native)</span><span class="tag">English (fluent)</span><span class="tag">Urdu (fluent)</span><span class="tag">German (basic)</span></div></div>
+    </div>
+  </section>
+
+  <footer>
+    © 2026 Yawar Mahmood · <a href="mailto:yawar14@hotmail.com">yawar14@hotmail.com</a>
+  </footer>
+</div>
+
+</body>
+</html>
