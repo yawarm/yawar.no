@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Held together by tension – Yawar Mahmood</title>
+<meta name="description" content="Tensegrity structures look like they shouldn't stand. Finding their shape is an energy minimisation problem.">
+<script>(()=>{let t=null;try{t=localStorage.getItem('theme')}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+</head>
+<body>
+<header class="wrap bar">
+  <a class="home" href="../index.html">yawar<b>.</b>no</a>
+  <nav>
+    <a href="../index.html#notes">notes</a>
+    <a href="../index.html#hello">say hi</a>
+    <button class="theme-toggle" aria-label="Switch between light and dark mode"><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+  </nav>
+</header>
+<main class="narrow">
+  <div class="article-head">
+    <p class="kicker">note</p>
+    <h1>Held together by tension</h1>
+    <p class="lede">Tensegrity structures look like they shouldn't stand. Finding their shape is an energy minimisation problem.</p>
+    <p class="meta">2024 · 4 min read</p>
+  </div>
+  <article>
+<p>Tensegrity structures are those sculptures where rigid bars seem to float in mid-air, held in place only by cables. No bar touches another. Finding the shape they settle into is an optimisation problem, and it has more structure than I expected.</p>
+
+<figure><div class="frame tint-plum" style="border-radius:12px"><svg id="spin" viewBox="0 0 480 300" role="img" aria-label="A slowly rotating three-bar tensegrity prism"><line x1="318.4" y1="206.9" x2="154.3" y2="210.1" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="154.3" y1="210.1" x2="247.3" y2="244.4" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="247.3" y1="244.4" x2="318.4" y2="206.9" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="145.3" y1="81.3" x2="293.6" y2="99.3" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="293.6" y1="99.3" x2="281.1" y2="57.9" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="281.1" y1="57.9" x2="145.3" y2="81.3" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="318.4" y1="206.9" x2="293.6" y2="99.3" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="154.3" y1="210.1" x2="281.1" y2="57.9" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="247.3" y1="244.4" x2="145.3" y2="81.3" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="318.4" y1="206.9" x2="145.3" y2="81.3" stroke="var(--ink)" stroke-width="7" stroke-linecap="round"/><line x1="154.3" y1="210.1" x2="293.6" y2="99.3" stroke="var(--ink)" stroke-width="7" stroke-linecap="round"/><line x1="247.3" y1="244.4" x2="281.1" y2="57.9" stroke="var(--ink)" stroke-width="7" stroke-linecap="round"/><circle cx="318.4" cy="206.9" r="5" fill="var(--tomato)"/><circle cx="154.3" cy="210.1" r="5" fill="var(--tomato)"/><circle cx="247.3" cy="244.4" r="5" fill="var(--tomato)"/><circle cx="145.3" cy="81.3" r="5" fill="var(--tomato)"/><circle cx="293.6" cy="99.3" r="5" fill="var(--tomato)"/><circle cx="281.1" cy="57.9" r="5" fill="var(--tomato)"/></svg></div>
+<figcaption>A three-bar tensegrity prism: thick lines are bars, thin lines are cables, dots are joints.</figcaption></figure>
+
+<h2>A structure as a graph</h2>
+<p>A tensegrity is a graph \(G = (V, E)\): joints are vertices, and every edge is either a bar or a cable. If joint \(i\) sits at \(x^{(i)} \in \mathbb R^3\), the unknown is the vector of all positions \(X = (x^{(1)}, \dots, x^{(N)}) \in \mathbb R^{3N}\). The structure settles where its <b>total energy</b> is as low as possible.</p>
+
+<h2>The energy</h2>
+<p><b>Bars</b> are stiff springs that resist both stretching and squashing. With rest length \(\ell_{ij}\) and current length \(L_{ij} = \lVert x^{(i)} - x^{(j)}\rVert\):</p>
+$$E^{\text{bar}}_{\text{elast}}(e_{ij}) = \frac{c}{2\ell_{ij}^2}\,(L_{ij} - \ell_{ij})^2.$$
+<p><b>Gravity</b> pulls on the bars' mass, with line density \(\rho\):</p>
+$$E^{\text{bar}}_{\text{grav}}(e_{ij}) = \rho g\,\ell_{ij}\,\frac{x_3^{(i)} + x_3^{(j)}}{2}.$$
+<p><b>Cables</b> only resist stretching. A slack cable does nothing:</p>
+$$E^{\text{cable}}_{\text{elast}}(e_{ij}) = \begin{cases}\dfrac{k}{2\ell_{ij}^2}\,(L_{ij} - \ell_{ij})^2 & L_{ij} \gt \ell_{ij},\\[4pt] 0 & \text{otherwise.}\end{cases}$$
+<p>And <b>external loads</b>, weights \(m_i\) hanging from the joints: \(E_{\text{ext}} = \sum_i m_i g\, x_3^{(i)}\). The objective is the sum:</p>
+$$E(X) = \sum_{e_{ij} \in \mathcal B}\big(E^{\text{bar}}_{\text{elast}} + E^{\text{bar}}_{\text{grav}}\big) + \sum_{e_{ij} \in \mathcal C} E^{\text{cable}}_{\text{elast}} + E_{\text{ext}}(X).$$
+<p>Two kinds of constraints keep it physical: some joints are fixed, \(x^{(i)} = p^{(i)}\), and nothing may go below the ground, \(x^{(i)}_3 \ge f(x^{(i)}_1, x^{(i)}_2)\).</p>
+
+<h2>Existence of solutions</h2>
+<p>With fixed joints and a connected graph, every free joint is within a bounded distance of a fixed one, so the feasible set is compact. \(E\) is continuous, and the extreme value theorem guarantees a global minimum. With a ground profile instead, you need the ground to rise towards infinity away from the origin (coercivity). On a perfectly flat floor the argument breaks down: mathematically, a structure could keep spreading out and lowering its energy.</p>
+
+<h2>Cable nets</h2>
+<p>With only cables and fixed joints, the problem is well behaved.</p>
+<ul>
+<li><b>It's \(C^1\), but not \(C^2\).</b> The gradient of a cable term, \(\frac{k}{\ell_{ij}^2}\big(x^{(i)} - x^{(j)}\big)\big(1 - \frac{\ell_{ij}}{L_{ij}}\big)\), goes smoothly to zero as the cable goes slack. The second derivative jumps there.</li>
+<li><b>It's convex, but not strictly.</b> Each cable term is a convex function of a norm, and the load term is linear.</li>
+</ul>
+<p>So \(\nabla E(X^*) = 0\) is not just necessary but sufficient: any stationary point is a global minimum. With 4 fixed corners, 4 free joints, 8 cables of length 3, \(k = 3\) and \(mg = 1/6\), BFGS found the exact solution from a naive starting guess:</p>
+<table>
+<tr><th>Joint</th><th>Start</th><th>BFGS</th><th>Exact</th></tr>
+<tr><td>\(x^{(5)}\)</td><td>(0, 0, 10)</td><td>(2, 2, −1.5)</td><td>(2, 2, −1.5)</td></tr>
+<tr><td>\(x^{(6)}\)</td><td>(0, 0, 10)</td><td>(−2, 2, −1.5)</td><td>(−2, 2, −1.5)</td></tr>
+<tr><td>\(x^{(7)}\)</td><td>(0, 0, 10)</td><td>(−2, −2, −1.5)</td><td>(−2, −2, −1.5)</td></tr>
+<tr><td>\(x^{(8)}\)</td><td>(0, 0, 10)</td><td>(2, −2, −1.5)</td><td>(2, −2, −1.5)</td></tr>
+</table>
+<p class="muted">27 iterations, 0.15 seconds.</p>
+
+<h2>Adding bars</h2>
+<p>Bars break convexity. A quick counterexample: take \(\lambda = \tfrac12\) and \(y = -x\). Then \(E\big(\tfrac12 x + \tfrac12 y\big) = E(0)\), where every bar is collapsed to zero length and stores energy \(\sum k/2 \gt 0\), while the average \(\tfrac12E(x) + \tfrac12E(-x)\) can be zero. The convexity inequality fails.</p>
+<div class="demo mini" id="mini-landscape"><p class="how"><b>Try:</b> click anywhere on the curve to drop a ball, then switch between the two energies. <b>Notice:</b> with cables only, every ball rolls to the same bottom (convex). Add a bar and the landscape gets two valleys, so where you start decides where you end up.</p><canvas id="c-landscape" aria-label="interactive illustration"></canvas><div class="controls"><button class="btn primary" id="landscape-cab">cables only</button><button class="btn" id="landscape-bar">with a bar</button><span class="readout" id="landscape-out"></span></div></div>
+<p>So now \(\nabla E = 0\) is only necessary, and different starting points can end in different local minima. Each of those is still a physically stable state, just maybe not the lowest one. For a tensegrity dome (4 fixed joints, 4 bars of length 10, 8 cables):</p>
+<table>
+<tr><th>Run</th><th>Iterations</th><th>Time</th><th>Result</th></tr>
+<tr><td>symmetric start (0, 0, 3)</td><td>66</td><td>0.62 s</td><td>matches the exact solution to about 3 decimals</td></tr>
+<tr><td>asymmetric start</td><td>101</td><td>0.89 s</td><td>a different, twisted local minimum</td></tr>
+</table>
+
+<h2>BFGS</h2>
+<p><b>BFGS</b> is a quasi-Newton method. Instead of computing the Hessian, it builds up an approximation of the inverse Hessian \(H_k\) from gradients only. With step \(s_k = X_{k+1} - X_k\) and gradient change \(y_k = \nabla E_{k+1} - \nabla E_k\):</p>
+$$H_{k+1} = \big(I - \rho_k s_k y_k^\top\big)H_k\big(I - \rho_k y_k s_k^\top\big) + \rho_k s_k s_k^\top, \qquad \rho_k = \frac{1}{y_k^\top s_k}.$$
+<p>Each step size is chosen by a line search satisfying the <b>Wolfe conditions</b>. The Armijo condition makes sure each step actually lowers the energy enough; the curvature condition prevents steps that are too short to make progress:</p>
+$$E(X_k + \alpha p_k) \le E(X_k) + c_1\alpha\,\nabla E_k^\top p_k, \qquad \nabla E(X_k + \alpha p_k)^\top p_k \ge c_2\,\nabla E_k^\top p_k.$$
+<p>We used \(c_1 = 0.1\) and an extrapolation factor of 3, tuned by trial and error.</p>
+
+<h2>Free-standing structures</h2>
+<p>Finally, I removed the fixed joints, added cables along the base, and let the structure stand on a bowl-shaped ground \(f(x_1, x_2) = (x_1^2 + x_2^2)/20\). The ground constraint was enforced with a penalty term (scale 0.1), so the optimiser trades energy against constraint violation. From a rough initial guess, it found a balanced dome in which every cable is taut:</p>
+<div class="stats">
+  <div class="stat"><b>32</b><span>iterations</span></div>
+  <div class="stat"><b>0.50 s</b><span>runtime</span></div>
+  <div class="stat"><b>8</b><span>joints, none fixed</span></div>
+</div>
+<p>The top joints landed at a height of about 9.17, close to the 9.54 of the dome with fixed corners. They aren't identical, and that's expected: the base now rests on a curved floor instead of being pinned at height zero.</p>
+
+<h2>Try it yourself</h2>
+<p>The cable problem from above, in 2D and alive: a cable made of short segments, hanging between two anchors. Just like in the real problem, segments only pull (a slack one does nothing), gravity pulls on the joints, and the whole thing slides downhill in energy until it settles.</p>
+
+<div class="demo"><p class="how"><b>Try:</b> click a joint to hang a weight on it, drag a joint and let go, or drag one of the black anchors. <b>Notice:</b> the cable always settles into the shape with the lowest energy. Weights make the segments above them pull harder (redder); push the anchors together and the cable goes slack (dashed), because a cable can’t push.</p><canvas id="cv" aria-label="Let it find its shape interactive demo"></canvas><div class="controls"><button id="netreset" class="btn">remove weights</button><button id="netrebuild" class="btn">reset</button><span class="readout" id="nete"></span></div></div>
+<p class="note-small">Dashed lines are slack cables. Colour shows how hard a cable is being stretched.</p>
+<!--DEMO-->
+<p class="closer">The code and report are on <a href="https://github.com/yawarm/TMA4180-Optimization1">GitHub</a>.</p>
+<script>
+(() => {
+  const svg = document.getElementById('spin');
+  if (!svg || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const tw = 150 * Math.PI / 180;
+  const bot = [0,1,2].map(k => [Math.cos(2*Math.PI*k/3), Math.sin(2*Math.PI*k/3), -0.8]);
+  const top = [0,1,2].map(k => [Math.cos(2*Math.PI*k/3 + tw), Math.sin(2*Math.PI*k/3 + tw), 0.8]);
+  const tilt = 0.42, cx = 240, cy = 150, sc = 95;
+  const proj = (p, a) => {
+    let [x, y, z] = p;
+    [x, y] = [x*Math.cos(a) - y*Math.sin(a), x*Math.sin(a) + y*Math.cos(a)];
+    [y, z] = [y*Math.cos(tilt) - z*Math.sin(tilt), y*Math.sin(tilt) + z*Math.cos(tilt)];
+    return [cx + x*sc, cy - z*sc*0.95 + y*14];
+  };
+  const lines = svg.querySelectorAll('line'), dots = svg.querySelectorAll('circle');
+  function draw(t) {
+    const a = 0.6 + t / 4000;
+    const B = bot.map(p => proj(p, a)), T = top.map(p => proj(p, a));
+    const segs = [...[0,1,2].map(i => [B[i], B[(i+1)%3]]), ...[0,1,2].map(i => [T[i], T[(i+1)%3]]),
+                  ...[0,1,2].map(i => [B[i], T[(i+1)%3]]), ...[0,1,2].map(i => [B[i], T[i]])];
+    segs.forEach(([p, q], i) => { const l = lines[i]; l.setAttribute('x1', p[0]); l.setAttribute('y1', p[1]); l.setAttribute('x2', q[0]); l.setAttribute('y2', q[1]); });
+    [...B, ...T].forEach((p, i) => { dots[i].setAttribute('cx', p[0]); dots[i].setAttribute('cy', p[1]); });
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+</script>
+</article>
+  <div class="next"><a href="when-does-it-rain-in-tokyo.html">← When does it rain in Tokyo?</a><a href="four-agents-one-pacman.html">Four AI agents, one tmux session →</a></div>
+</main>
+<footer class="wrap"><span>© 2026 Yawar Mahmood</span></footer>
+<script src="../theme.js"></script>
+<script>
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function fitCanvas(c, h) {
+  const dpr = Math.min(devicePixelRatio || 1, 2), w = c.clientWidth;
+  c.width = w * dpr; c.height = h * dpr; c.style.height = h + 'px';
+  const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
+}
+
+const c = document.getElementById('cv'); const N = 17; let nodes = [], cables = [], drag = null, down = null, build;
+const K = 40, G = 0.6;
+build = function () {
+  const W = c.getBoundingClientRect().width || 600, ax = W * 0.18, bx = W * 0.82, L = 1.3 * (bx - ax) / (N - 1);
+  nodes = []; cables = [];
+  for (let i = 0; i < N; i++) nodes.push({ x: ax + (bx - ax) * i / (N - 1), y: 70, vx: 0, vy: 0, fixed: i === 0 || i === N - 1, load: 0 });
+  for (let i = 0; i < N - 1; i++) cables.push([i, i + 1, L]);
+}
+function energy() { let e = 0;
+  for (const [a, b, L] of cables) { const d = Math.hypot(nodes[a].x - nodes[b].x, nodes[a].y - nodes[b].y); if (d > L) e += K * (d - L) ** 2 / 2; }
+  for (const n of nodes) e -= (1 + n.load) * G * n.y; return e; }
+function physics() {
+  for (let s = 0; s < 12; s++) {
+    for (const n of nodes) { n.fx = 0; n.fy = (1 + n.load) * G; }
+    for (const [a, b, L] of cables) { const A = nodes[a], B = nodes[b], dx = B.x - A.x, dy = B.y - A.y, d = Math.hypot(dx, dy) || 1;
+      if (d > L) { const f = K * (d - L) / d; A.fx += f * dx; A.fy += f * dy; B.fx -= f * dx; B.fy -= f * dy; } }
+    for (const n of nodes) { if (n.fixed || n === drag) { n.vx = n.vy = 0; continue; } const m = 1 + n.load;
+      n.vx = (n.vx + n.fx / m * 0.03) * 0.9; n.vy = (n.vy + n.fy / m * 0.03) * 0.9; n.x += n.vx; n.y += n.vy; }
+  }
+}
+function draw() {
+  physics(); const { ctx, w } = fitCanvas(c, 360); ctx.clearRect(0, 0, w, 360);
+  cables.forEach(cb => { const [a, b, L] = cb, now = Math.max(0, Math.hypot(nodes[a].x - nodes[b].x, nodes[a].y - nodes[b].y) - L); cb.t = cb.t === undefined ? now : 0.92 * cb.t + 0.08 * now; });
+  const tens = cables.map(cb => cb.t), mx = Math.max(1e-6, ...tens);
+  cables.forEach(([a, b, L], i) => { const A = nodes[a], B = nodes[b], slack = tens[i] < 0.02 * mx && Math.hypot(A.x - B.x, A.y - B.y) < L * 0.995;
+    const t = tens[i] / mx; ctx.setLineDash(slack ? [3, 4] : []); ctx.lineWidth = slack ? 1.5 : 2 + 4 * t;
+    ctx.strokeStyle = slack ? css('--faint') : css(t > 0.66 ? '--tomato' : t > 0.33 ? '--mustard' : '--teal');
+    ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke(); });
+  ctx.setLineDash([]);
+  for (const n of nodes) {
+    if (n.load) { ctx.strokeStyle = css('--soft'); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x, n.y + 14); ctx.stroke();
+      ctx.fillStyle = css('--tomato'); ctx.fillRect(n.x - 4 - n.load, n.y + 14, 8 + 2 * n.load, 6 + 2 * n.load); }
+    ctx.fillStyle = n.fixed ? css('--ink') : css('--plum'); ctx.beginPath(); ctx.arc(n.x, n.y, n.fixed ? 7 : 4.5, 0, 7); ctx.fill();
+    if (n.fixed) ctx.fillRect(n.x - 12, n.y - 16, 24, 5); }
+  ctx.fillStyle = css('--faint'); ctx.font = '11px IBM Plex Mono, monospace'; ctx.fillText('colour = how hard each segment pulls', 14, 350);
+  document.getElementById('nete').textContent = `energy ${Math.round(energy())}`;
+  requestAnimationFrame(draw);
+}
+const pick = e => { const r = c.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; let best = null, bd = 24;
+  for (const n of nodes) { const d = Math.hypot(n.x - x, n.y - y); if (d < bd) { bd = d; best = n; } } return [best, x, y]; };
+c.addEventListener('pointerdown', e => { const [n, x, y] = pick(e); if (!n) return; down = { n, x, y, moved: false }; c.setPointerCapture(e.pointerId); });
+c.addEventListener('pointermove', e => { if (!down) return; const r = c.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  if (Math.hypot(x - down.x, y - down.y) > 4) { down.moved = true; drag = down.n; } if (drag) { drag.x = Math.max(8, Math.min(r.width - 8, x)); drag.y = Math.max(20, Math.min(340, y)); } });
+c.addEventListener('pointerup', () => { if (down && !down.moved && !down.n.fixed) down.n.load = (down.n.load + 2) % 8; down = null; drag = null; });
+document.getElementById('netreset').onclick = () => nodes.forEach(n => n.load = 0);
+document.getElementById('netrebuild').onclick = () => build();
+let lastW = 0; const _build = build; build = () => { lastW = c.getBoundingClientRect().width; _build(); };
+addEventListener('resize', () => { if (Math.abs(c.getBoundingClientRect().width - lastW) > 40) build(); });
+build(); requestAnimationFrame(draw);
+</script>
+<script>(() => { const c = document.getElementById('c-landscape'); const $ = id => document.getElementById('landscape-' + id);
+
+let mode = 'cab', balls = [];
+const E = x => mode === 'cab' ? 0.9 * x * x + 0.15 * x : 0.55 * (x * x - 1.6) ** 2 + 0.25 * x;
+const dE = x => (E(x + 1e-4) - E(x - 1e-4)) / 2e-4;
+function setMode(m) { mode = m; balls = []; $('cab').classList.toggle('primary', m === 'cab'); $('bar').classList.toggle('primary', m === 'bar'); }
+$('cab').onclick = () => setMode('cab'); $('bar').onclick = () => setMode('bar');
+const geo = () => { const w = c.getBoundingClientRect().width; return { X: x => w / 2 + x / 2.2 * (w / 2 - 20), Xi: px => (px - w / 2) / (w / 2 - 20) * 2.2, Y: e => 200 - e / 4 * 170 }; };
+c.addEventListener('pointerdown', e => { const r = c.getBoundingClientRect(); balls.push({ x: geo().Xi(e.clientX - r.left) }); });
+function frame() {
+  const { ctx, w, h } = fitCanvas(c, 220), { X, Y } = geo(); ctx.clearRect(0, 0, w, h);
+  ctx.strokeStyle = css('--plum'); ctx.lineWidth = 3; ctx.beginPath();
+  for (let x = -2.2; x <= 2.2; x += 0.02) { x === -2.2 ? ctx.moveTo(X(x), Y(E(x))) : ctx.lineTo(X(x), Y(E(x))); } ctx.stroke();
+  for (const b of balls) { b.x -= 0.02 * dE(b.x); b.x = Math.max(-2.2, Math.min(2.2, b.x)); ctx.fillStyle = css('--tomato'); ctx.beginPath(); ctx.arc(X(b.x), Y(E(b.x)) - 8, 8, 0, 7); ctx.fill(); }
+  const ends = [...new Set(balls.filter(b => Math.abs(dE(b.x)) < 0.01).map(b => b.x.toFixed(1)))];
+  $('out').textContent = balls.length ? `${balls.length} ball${balls.length > 1 ? 's' : ''} · settled in ${ends.length} different minim${ends.length === 1 ? 'um' : 'a'}` : 'click to drop a ball';
+  ctx.fillStyle = css('--faint'); ctx.font = '11px IBM Plex Mono, monospace'; ctx.fillText('energy E(X)', 10, 14); ctx.fillText('shape X →', w - 80, h - 4);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+if (c) new MutationObserver(() => dispatchEvent(new Event('resize'))).observe(document.documentElement, { attributes: true });
+})();</script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cells that organise themselves – Yawar Mahmood</title>
+<meta name="description" content="Some organelles have no membrane at all. We used Monte Carlo simulation to watch charged molecules clump together on their own, and saw how temperature breaks them apart.">
+<script>(()=>{let t=null;try{t=localStorage.getItem('theme')}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+</head>
+<body>
+<header class="wrap bar">
+  <a class="home" href="../index.html">yawar<b>.</b>no</a>
+  <nav>
+    <a href="../index.html#notes">notes</a>
+    <a href="../index.html#hello">say hi</a>
+    <button class="theme-toggle" aria-label="Switch between light and dark mode"><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+  </nav>
+</header>
+<main class="narrow">
+  <div class="article-head">
+    <p class="kicker">note</p>
+    <h1>Cells that organise themselves</h1>
+    <p class="lede">Some organelles have no membrane at all. We used Monte Carlo simulation to watch charged molecules clump together on their own, and saw how temperature breaks them apart.</p>
+    <p class="meta">2022 · 4 min read</p>
+  </div>
+  <article>
+<p>Most organelles in a cell sit inside a membrane. But some don't: they're just dense droplets of molecules that have gathered together on their own. How does that happen without a wall to hold them in? We tried to understand one ingredient behind it: <b>charged molecules attracting each other, while the whole system drifts towards the lowest energy it can find.</b> No analytical solution exists for this, so we simulated it.</p>
+
+<h2>The setup</h2>
+<p>We put \(2M\) charged monomers on an \(N \times N\) grid: \(M\) positive (blue) and \(M\) negative (red). The grid wraps around at the edges, so the right side continues on the left and the bottom continues at the top. Technically it's the surface of a torus, so there are no walls for molecules to get stuck against.</p>
+
+<h2>The energy</h2>
+<p>Only neighbours interact: the four squares directly above, below, left and right. For each neighbouring pair we used Coulomb's law with the charges of an electron, screened by water:</p>
+$$E = \frac12 \sum_{i}\sum_{j \in \mathcal N(i)} \alpha\, q_i q_j, \qquad \alpha = \frac{e^2}{4\pi\varepsilon_0\varepsilon_r a^2},$$
+<p>with \(q \in \{-1, +1\}\), relative permittivity \(\varepsilon_r = 78\) for water and grid spacing \(a = 23\,\mu\text{m}\). Opposite charges side by side give negative energy; equal charges give positive. The \(\tfrac12\) stops each pair being counted twice. Ignoring everything beyond the nearest neighbours is a simplification, but Coulomb interactions fall off quickly and the solvent screens them further.</p>
+
+<h2>The Metropolis algorithm</h2>
+<p>Each step: pick a random molecule and a random direction. If the target square is occupied, nothing happens. Otherwise compute the change in energy \(\Delta E\), and accept the move with probability</p>
+$$P(\text{accept}) = \min\!\left(1,\; e^{-\Delta E / k_B T}\right).$$
+<p>Downhill moves are always taken. Uphill moves are sometimes taken, more often when it's hot. Run that long enough and the configurations follow the Boltzmann distribution \(P(\text{state}) \propto e^{-E/k_BT}\): low energy is likely, but heat keeps stirring things up.</p>
+<div class="demo mini" id="mini-accept"><p class="how"><b>Try:</b> change the temperature. <b>Notice:</b> moves that lower the energy (left of zero) are always accepted. Uphill moves get exponentially less likely, much more so when it's cold.</p><canvas id="c-accept" aria-label="interactive illustration"></canvas><div class="controls"><label>temperature <input type="range" id="accept-t" min="100" max="800" value="250"><b id="accept-tv"></b></label><span class="readout" id="accept-out"></span></div></div>
+<p>The core of it, from our code:</p>
+<pre><code>delta_E = new_contribution - old_contribution
+if delta_E &lt;= 0 or random.random() &lt;= np.exp(-beta * delta_E):
+    points[random_index] = move_to      # accept
+    return delta_E
+else:
+    grid[random_monomer] = charge       # revert
+    grid[move_to] = 0.
+    return 0.</code></pre>
+<p>Because only the moved molecule's neighbours change, \(\Delta E\) costs four lookups instead of recomputing the whole grid, which is what made millions of steps feasible (with Numba's <code>@njit</code> doing the rest).</p>
+
+<h2>Temperature</h2>
+<p>We ran 50,000 steps on a 15 × 15 grid with 25 positive and 25 negative monomers, at two temperatures:</p>
+<figure><div class="frame"><img src="../img/clusters-200k.png" alt="Monomer grid and its clusters after 50,000 iterations at 200 K: large, tightly packed clusters." loading="lazy"></div>
+<figcaption>200 K: molecules have gathered into large clusters (right panel colours each cluster).</figcaption></figure>
+<figure><div class="frame"><img src="../img/clusters-500k.png" alt="The same system at 500 K: small, scattered clusters." loading="lazy"></div>
+<figcaption>500 K: the extra thermal energy keeps breaking clusters apart.</figcaption></figure>
+<p>At 200 K the system orders itself into big clusters. At 500 K it looked about as chaotic at the end as at the start.</p>
+
+<h3>Burn-in</h3>
+<p>To measure average cluster size across temperatures from 100 K to 1000 K, we first had to let each run reach equilibrium. Cold systems are slow, since uphill moves are rare, so the burn-in shrinks with temperature:</p>
+$$t_{\text{equil}}(T) = t_{\max}\,e^{-s(T - T_l)} + C, \qquad t_{\max} = 10^6,\; s = \tfrac{1}{200},\; T_l = 100\text{ K},\; C = 10^4.$$
+<p>After that we took 1000 measurements, 1000 steps apart. Average cluster size dropped steadily as temperature rose. We also noticed that at low temperatures, two runs disagreed more, a sign that the coldest systems still hadn't fully settled.</p>
+
+<h2>From beads to chains</h2>
+<p>Next we joined the monomers into <b>polymers</b>: chains of \(L\) monomers that move together. Monomers in the same polymer don't interact with each other. We tried two kinds of moves:</p>
+<ul>
+<li><b>Rigid</b>: the whole polymer slides one square without changing shape.</li>
+<li><b>Medium flexibility</b>: parts of the polymer can move while it stays connected, so it can bend.</li>
+</ul>
+<figure><div class="frame"><img src="../img/polymers.png" alt="30x30 grid with 5 positive and 5 negative polymers before and after 100,000 flexible iterations at 200 K." loading="lazy"></div>
+<figcaption>Ten polymers on a 30 × 30 grid, before and after 100,000 flexible-move iterations at 200 K.</figcaption></figure>
+<p>Flexible polymers stretched out and wrapped around each other. That matters, because the energy is all at the borders: the longer the border between oppositely charged polymers, the lower the energy. Rigid polymers can't intertwine like that, so they end up stuck at a higher energy. Then we varied the length \(L\) from 3 to 39 and measured how the number and size of clusters changed.</p>
+<p>Nothing in the code tells the molecules to form droplets. The structure comes from the energy rule and the randomness alone.</p>
+
+<h2>Try it yourself</h2>
+<p>A live version of the simulation. Each step picks a random molecule and tries to move it one square. Drag the temperature down and watch clusters appear; push it up and they melt away.</p>
+
+<div class="demo"><p class="how"><b>Try:</b> drag the temperature down to about 150 K and wait, then up to 700 K. <b>Notice:</b> cold molecules clump into droplets and the energy line drops; heat breaks them apart again.</p><canvas id="cv" aria-label="Molecules that clump together interactive demo"></canvas><div class="controls"><label>temperature <input type="range" id="temp" min="100" max="800" value="250"><b id="tempv">250 K</b></label>
+<button id="shuffle" class="btn">shuffle</button><span class="readout" id="energy"></span></div><canvas id="spark" style="width:100%;display:block;margin-top:10px" aria-label="energy over time"></canvas><p class="note-small" style="margin-top:4px">energy over time (lower is more ordered)</p></div>
+<p class="note-small">The grid wraps around at the edges, like the surface of a doughnut, so there are no walls for molecules to hide against. Same trick as in the original simulation.</p>
+<!--DEMO-->
+<p class="closer">The notebook is on <a href="https://github.com/yawarm/TMA4320-Introduction-to-Scientific-Computation">GitHub</a>.</p>
+</article>
+  <div class="next"><a href="four-agents-one-pacman.html">← Four AI agents, one tmux session</a><a href="pixel-faces.html">What are 500 pixel faces made of? →</a></div>
+</main>
+<footer class="wrap"><span>© 2026 Yawar Mahmood</span></footer>
+<script src="../theme.js"></script>
+<script>
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function fitCanvas(c, h) {
+  const dpr = Math.min(devicePixelRatio || 1, 2), w = c.clientWidth;
+  c.width = w * dpr; c.height = h * dpr; c.style.height = h + 'px';
+  const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
+}
+
+const c = document.getElementById('cv'); const G = 40, M = 110; let grid, energyHist = [];
+const tempEl = document.getElementById('temp');
+const at = (i, j) => grid[((i + G) % G) * G + ((j + G) % G)];
+function shuffle() {
+  grid = new Int8Array(G * G); let placed = 0;
+  while (placed < 2 * M) { const k = Math.random() * G * G | 0; if (!grid[k]) { grid[k] = placed < M ? 1 : -1; placed++; } }
+  energyHist = [];
+}
+const nb = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+function localE(i, j, q) { let e = 0; for (const [a, b] of nb) e += q * at(i + a, j + b); return e; }
+function totalE() { let e = 0; for (let i = 0; i < G; i++) for (let j = 0; j < G; j++) { const q = at(i, j); if (q) e += q * (at(i + 1, j) + at(i, j + 1)); } return e; }
+function sweep(n) {
+  const beta = 520 / +tempEl.value;
+  for (let s = 0; s < n; s++) {
+    const k = Math.random() * G * G | 0, q = grid[k]; if (!q) continue;
+    const i = k / G | 0, j = k % G, [a, b] = nb[Math.random() * 4 | 0];
+    const ni = (i + a + G) % G, nj = (j + b + G) % G, nk = ni * G + nj; if (grid[nk]) continue;
+    const before = localE(i, j, q); grid[k] = 0; const after = localE(ni, nj, q);
+    const dE = after - before;
+    if (dE <= 0 || Math.random() < Math.exp(-beta * dE)) grid[nk] = q; else grid[k] = q;
+  }
+}
+function draw() {
+  const { ctx, w, h } = fitCanvas(c, Math.min(c.clientWidth, 460)), s = Math.min(w, h) / G, ox = (w - s * G) / 2;
+  ctx.clearRect(0, 0, w, h);
+  const pos = css('--teal'), neg = css('--tomato');
+  for (let i = 0; i < G; i++) for (let j = 0; j < G; j++) { const q = grid[i * G + j]; if (!q) continue;
+    ctx.fillStyle = q > 0 ? pos : neg; ctx.beginPath(); ctx.roundRect(ox + j * s + 1, i * s + 1, s - 2, s - 2, 3); ctx.fill(); }
+  const e = totalE(); energyHist.push(e); if (energyHist.length > 200) energyHist.shift();
+  document.getElementById('energy').textContent = `energy ${e}`;
+  document.getElementById('tempv').textContent = tempEl.value + ' K';
+  const sp = document.getElementById('spark'), sc = fitCanvas(sp, 60), lo = Math.min(...energyHist), hi = Math.max(...energyHist, lo + 1);
+  sc.ctx.clearRect(0, 0, sc.w, 60); sc.ctx.strokeStyle = css('--plum'); sc.ctx.lineWidth = 2; sc.ctx.beginPath();
+  energyHist.forEach((v, i) => { const x = i / 199 * sc.w, y = 6 + (v - lo) / (hi - lo) * 48; i ? sc.ctx.lineTo(x, y) : sc.ctx.moveTo(x, y); }); sc.ctx.stroke();
+}
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function loop() { sweep(4000); draw(); setTimeout(() => requestAnimationFrame(loop), reduce ? 400 : 0); }
+document.getElementById('shuffle').onclick = shuffle;
+shuffle(); loop();
+</script>
+<script>(() => { const c = document.getElementById('c-accept'); const $ = id => document.getElementById('accept-' + id);
+
+function draw() {
+  const T = +$('t').value, beta = 520 / T; $('tv').textContent = T + ' K';
+  const { ctx, w, h } = fitCanvas(c, 210), X = e => 30 + (e + 2) / 6 * (w - 50), Y = p => h - 26 - p * (h - 46);
+  ctx.clearRect(0, 0, w, h);
+  ctx.strokeStyle = css('--line'); ctx.beginPath(); ctx.moveTo(X(0), 12); ctx.lineTo(X(0), h - 26); ctx.stroke();
+  ctx.strokeStyle = css('--tomato'); ctx.lineWidth = 3; ctx.beginPath();
+  for (let e = -2; e <= 4; e += 0.02) { const p = Math.min(1, Math.exp(-beta * e)); e === -2 ? ctx.moveTo(X(e), Y(p)) : ctx.lineTo(X(e), Y(p)); } ctx.stroke();
+  ctx.fillStyle = css('--ink'); for (const k of [1, 2, 3, 4]) { const p = Math.exp(-beta * k); ctx.beginPath(); ctx.arc(X(k), Y(p), 4.5, 0, 7); ctx.fill(); }
+  ctx.fillStyle = css('--faint'); ctx.font = '11px IBM Plex Mono, monospace';
+  ctx.fillText('ΔE < 0: always accepted', X(-1.9), Y(1) + 16); ctx.fillText('ΔE (bonds broken) →', w - 150, h - 8); ctx.fillText('P(accept)', 30, 12);
+  for (const k of [1, 2, 3, 4]) ctx.fillText(k, X(k) - 3, h - 8);
+  $('out').textContent = `breaking 1 bond: ${(100 * Math.exp(-beta)).toFixed(1)}% · 2 bonds: ${(100 * Math.exp(-2 * beta)).toFixed(2)}%`;
+}
+$('t').addEventListener('input', draw); addEventListener('resize', draw); draw();
+
+if (c) new MutationObserver(() => dispatchEvent(new Event('resize'))).observe(document.documentElement, { attributes: true });
+})();</script>
+</body>
+</html>

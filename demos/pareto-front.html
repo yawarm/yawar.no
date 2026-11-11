@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evolve a greener recipe – Yawar Mahmood</title>
+<meta name="description" content="A small genetic algorithm searches for concrete recipes that are both cheap and low in CO₂. You can't have both, so it finds the trade-off curve.">
+<script>(()=>{let t=null;try{t=localStorage.getItem('theme')}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+</head>
+<body>
+<header class="wrap bar">
+  <a class="home" href="../index.html">yawar<b>.</b>no</a>
+  <nav>
+    <a href="../index.html#notes">notes</a>
+    <a href="../index.html#hello">say hi</a>
+    <button class="theme-toggle" aria-label="Switch between light and dark mode"><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+  </nav>
+</header>
+<main class="narrow">
+  <div class="article-head">
+    <p class="kicker">note</p>
+    <h1>Evolve a greener recipe</h1>
+    <p class="lede">A small genetic algorithm searches for concrete recipes that are both cheap and low in CO₂. You can't have both, so it finds the trade-off curve.</p>
+  </div>
+  <article>
+    
+<p>The concrete project didn't have one "best" recipe. Cheaper mixes with more cement emit more CO₂; replacing cement with other binders cuts CO₂ but costs more. And every recipe still has to satisfy the regulations. That's a <b>multi-objective</b> problem, and I solved it with NSGA-II on top of <a href="regression-tree.html">regression tree</a> models of how a recipe behaves.</p>
+<h2>Several objectives</h2>
+<p>We want to minimise several objectives at once, here cost and CO₂, \(\mathbf F(\mathbf x) = \big(f_1(\mathbf x), f_2(\mathbf x)\big)\), subject to constraints \(g(\mathbf x) \le 0\). Recipe \(\mathbf a\) <b>dominates</b> \(\mathbf b\) if it's at least as good on every objective and strictly better on at least one:</p>
+$$\mathbf a \prec \mathbf b \iff f_m(\mathbf a) \le f_m(\mathbf b)\;\;\forall m \;\;\text{and}\;\; f_m(\mathbf a) \lt f_m(\mathbf b)\;\;\text{for some } m.$$
+<p>The recipes nobody dominates form the <b>Pareto front</b>. Each point on it is a different, defensible trade-off: you can't lower CO₂ without paying more. Choosing among them is a decision for people, not for the algorithm.</p>
+<div class="demo mini" id="mini-dominance"><p class="how"><b>Try:</b> move over the points. <b>Notice:</b> the orange box is everything the chosen recipe beats (more expensive <em>and</em> more CO₂). Points no box can reach form the Pareto front.</p><canvas id="c-dominance" aria-label="interactive illustration"></canvas><div class="controls"><span class="readout" id="dominance-out"></span></div></div>
+<h2>NSGA-II</h2>
+<ol>
+<li><b>Non-dominated sorting.</b> Rank the population into fronts: front 1 is the non-dominated set, front 2 is what's non-dominated once front 1 is removed, and so on.</li>
+<li><b>Crowding distance.</b> Within a front, prefer points in empty regions, so the front stays spread out instead of piling up in one spot. For point \(i\) in a front sorted by each objective \(m\):
+$$d_i = \sum_m \frac{f_m^{(i+1)} - f_m^{(i-1)}}{f_m^{\max} - f_m^{\min}},$$
+with the extreme points given \(d = \infty\) so they're always kept.</li>
+<li><b>Elitism.</b> Parents and children compete together. Fill the next generation front by front, and break ties in the last front by crowding distance.</li>
+</ol>
+<p>Constraints are handled by <b>constraint domination</b>: a feasible recipe always beats an infeasible one, and between two infeasible ones, the smaller violation wins.</p>
+<h2>Try it yourself</h2>
+<p>This toy version evolves a population of recipes (cement amount and replacement share). The <b style="color:var(--tomato)">orange points</b> are the Pareto front. Raise the strength requirement and watch the front move. <span class="muted">The coefficients are made up; the trade-off isn't.</span></p>
+
+    <div class="demo"><p class="how"><b>Try:</b> press run, then drag the strength requirement up. <b>Notice:</b> the orange points spread out along a curve: you can't get cheaper without more CO₂. Stricter rules push the whole front up and to the right.</p><canvas id="cv" aria-label="Evolve a greener recipe interactive demo"></canvas>
+      <div class="controls"><button id="run" class="btn primary">run</button><button id="reset" class="btn">reset</button>
+<label>min. strength <input type="range" id="smin" min="20" max="45" value="30"><b id="sminv">30 MPa</b></label>
+<span class="readout" id="gen"></span></div>
+    </div>
+    
+<h2>The real version</h2>
+<ul>
+<li><b>The objectives came from models.</b> Instead of formulas, regression trees fitted to data predicted each recipe's properties, which made every evaluation fast and explainable.</li>
+<li><b>The constraints came from the rules.</b> Regulatory requirements defined which recipes were allowed at all, and constraint domination kept the search inside them.</li>
+<li><b>The output was a menu, not an answer.</b> The value of the Pareto front is that it turns "what's the best recipe?" into "how much are you willing to pay per kilo of CO₂ saved?"</li>
+</ul>
+
+  </article>
+  <div class="next"><a href="regression-tree.html">← Grow a regression tree</a><a href="../index.html#notes">all notes →</a></div>
+</main>
+<footer class="wrap"><span>© 2026 Yawar Mahmood</span></footer>
+<script>
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function fitCanvas(c, h) {
+  const dpr = Math.min(devicePixelRatio || 1, 2), w = c.clientWidth;
+  c.width = w * dpr; c.height = h * dpr; c.style.height = h + 'px';
+  const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
+}
+
+const c = document.getElementById('cv'); const N = 60; let pop = [], gen = 0, running = false;
+const smin = document.getElementById('smin');
+// toy model, made-up coefficients: x = cement (kg/m3), r = replacement share
+const evalR = p => {
+  const clinker = p.x * (1 - p.r), alt = p.x * p.r;
+  const cost = 0.9 * clinker + 1.7 * alt + 35;
+  const co2 = 0.82 * clinker + 0.06 * alt + 18;
+  const strength = 0.135 * p.x * (1 - 0.55 * p.r ** 1.3);
+  return { ...p, cost, co2, strength, viol: Math.max(0, +smin.value - strength) };
+};
+const rnd = () => evalR({ x: 200 + Math.random() * 300, r: Math.random() * 0.7 });
+const clampP = p => evalR({ x: Math.min(500, Math.max(200, p.x)), r: Math.min(0.7, Math.max(0, p.r)) });
+const dom = (a, b) => {
+  if (a.viol || b.viol) return a.viol < b.viol;
+  return a.cost <= b.cost && a.co2 <= b.co2 && (a.cost < b.cost || a.co2 < b.co2);
+};
+function rank(ps) {
+  const fronts = []; let rest = [...ps];
+  while (rest.length) { const f = rest.filter(a => !rest.some(b => b !== a && dom(b, a))); fronts.push(f); rest = rest.filter(a => !f.includes(a)); }
+  return fronts;
+}
+function crowd(f) {
+  f.forEach(p => p.cd = 0);
+  for (const k of ['cost', 'co2']) {
+    const s = [...f].sort((a, b) => a[k] - b[k]); const span = (s[s.length - 1][k] - s[0][k]) || 1;
+    s[0].cd = s[s.length - 1].cd = Infinity;
+    for (let i = 1; i < s.length - 1; i++) s[i].cd += (s[i + 1][k] - s[i - 1][k]) / span;
+  }
+}
+function step() {
+  const kids = [];
+  while (kids.length < N) {
+    const a = pop[Math.random() * N | 0], b = pop[Math.random() * N | 0], t = Math.random();
+    kids.push(clampP({ x: a.x * t + b.x * (1 - t) + (Math.random() - 0.5) * 30, r: a.r * t + b.r * (1 - t) + (Math.random() - 0.5) * 0.08 }));
+  }
+  const next = [];
+  for (const f of rank([...pop, ...kids])) {
+    if (next.length + f.length <= N) { next.push(...f); continue; }
+    crowd(f); f.sort((a, b) => b.cd - a.cd); next.push(...f.slice(0, N - next.length)); break;
+  }
+  pop = next; gen++;
+}
+function draw() {
+  const { ctx, w, h } = fitCanvas(c, 380), P = 46;
+  ctx.clearRect(0, 0, w, h);
+  const X = v => P + (v - 180) / (520 - 180) * (w - P - 14), Y = v => h - 34 - (v - 60) / (440 - 60) * (h - 34 - 14);
+  ctx.strokeStyle = css('--line'); ctx.fillStyle = css('--faint'); ctx.font = '11px IBM Plex Mono, monospace';
+  for (let v = 200; v <= 500; v += 100) { ctx.beginPath(); ctx.moveTo(X(v), 14); ctx.lineTo(X(v), h - 34); ctx.stroke(); ctx.fillText(v, X(v) - 10, h - 18); }
+  for (let v = 100; v <= 400; v += 100) { ctx.beginPath(); ctx.moveTo(P, Y(v)); ctx.lineTo(w - 14, Y(v)); ctx.stroke(); ctx.fillText(v, 10, Y(v) + 4); }
+  ctx.fillText('cost →', w - 64, h - 4); ctx.save(); ctx.translate(12, 70); ctx.fillText('CO₂ ↑', 0, 0); ctx.restore();
+  const front = new Set(rank(pop)[0].filter(p => !p.viol));
+  for (const p of pop) {
+    ctx.beginPath(); ctx.arc(X(p.cost), Y(p.co2), front.has(p) ? 6 : 4, 0, 7);
+    ctx.fillStyle = p.viol ? css('--faint') : front.has(p) ? css('--tomato') : css('--teal');
+    ctx.globalAlpha = p.viol ? 0.4 : 0.9; ctx.fill(); ctx.globalAlpha = 1;
+  }
+  const f = [...front].sort((a, b) => a.cost - b.cost);
+  if (f.length > 1) { ctx.strokeStyle = css('--tomato'); ctx.lineWidth = 1.5; ctx.beginPath(); f.forEach((p, i) => i ? ctx.lineTo(X(p.cost), Y(p.co2)) : ctx.moveTo(X(p.cost), Y(p.co2))); ctx.stroke(); }
+  document.getElementById('gen').textContent = `generation ${gen} · ${front.size} on the front · ${pop.filter(p => p.viol).length} too weak`;
+  document.getElementById('sminv').textContent = smin.value + ' MPa';
+}
+function reset() { pop = Array.from({ length: N }, rnd); gen = 0; draw(); }
+function loop() { if (!running) return; step(); draw(); if (gen % 200 === 0 && gen > 0) { running = false; document.getElementById('run').textContent = 'run'; return; } setTimeout(loop, 60); }
+document.getElementById('run').onclick = e => { running = !running; e.target.textContent = running ? 'pause' : 'run'; loop(); };
+document.getElementById('reset').onclick = reset;
+smin.addEventListener('input', () => { pop = pop.map(clampP); draw(); });
+addEventListener('resize', draw);
+new MutationObserver(draw).observe(document.documentElement, { attributes: true });
+reset();
+</script>
+<script src="../theme.js"></script>
+<script>(() => { const c = document.getElementById('c-dominance'); const $ = id => document.getElementById('dominance-' + id);
+
+const pts = Array.from({ length: 34 }, () => { const c0 = Math.random(); return [c0, Math.min(0.97, 0.06 + 0.8 * (1 - c0) ** 2 + Math.random() * 0.45)]; });
+const dom = (a, b) => a[0] <= b[0] && a[1] <= b[1] && (a[0] < b[0] || a[1] < b[1]);
+const front = pts.filter(p => !pts.some(q => q !== p && dom(q, p)));
+let hov = front[0];
+function draw() {
+  const { ctx, w, h } = fitCanvas(c, 280), X = x => 40 + x * (w - 60), Y = y => h - 30 - y * (h - 50);
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = css('--tomato'); ctx.globalAlpha = 0.12; ctx.fillRect(X(hov[0]), Y(1), X(1) - X(hov[0]), Y(hov[1]) - Y(1)); ctx.globalAlpha = 1;
+  const beats = pts.filter(q => dom(hov, q)).length, beaten = pts.filter(q => dom(q, hov)).length;
+  for (const p of pts) { const f = front.includes(p); ctx.fillStyle = p === hov ? css('--ink') : dom(hov, p) ? css('--tomato') : f ? css('--mustard') : css('--teal');
+    ctx.beginPath(); ctx.arc(X(p[0]), Y(p[1]), p === hov ? 7 : f ? 6 : 4.5, 0, 7); ctx.fill(); }
+  ctx.fillStyle = css('--faint'); ctx.font = '11px IBM Plex Mono, monospace'; ctx.fillText('cost →', w - 60, h - 8); ctx.fillText('↑ CO₂', 6, 16);
+  $('out').textContent = `beats ${beats} recipe${beats === 1 ? '' : 's'} · beaten by ${beaten} · ${beaten ? 'not on the front' : 'on the Pareto front ★'}`;
+}
+c.addEventListener('pointermove', e => { const r = c.getBoundingClientRect(), x = (e.clientX - r.left - 40) / (r.width - 60), y = (r.height - 30 - (e.clientY - r.top)) / (r.height - 50);
+  let b = hov, bd = 1; for (const p of pts) { const d = Math.hypot(p[0] - x, p[1] - y); if (d < bd) { bd = d; b = p; } } if (b !== hov) { hov = b; draw(); } });
+addEventListener('resize', draw); draw();
+
+if (c) new MutationObserver(() => dispatchEvent(new Event('resize'))).observe(document.documentElement, { attributes: true });
+})();</script>
+</body>
+</html>
