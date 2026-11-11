@@ -237,3 +237,21 @@ article pre code { background: none; border: 0; padding: 0; font-size: inherit; 
 /* home tagline + closing line under articles */
 .hero .tagline { font-family: "Instrument Serif", Georgia, serif; font-size: clamp(1.3rem, 2.6vw, 1.7rem); line-height: 1.25; color: var(--soft); margin: 14px 0 0; }
 .closer { font-size: 0.95rem; color: var(--soft); margin-top: 22px; }
+
+/* small screens: controls must never be wider than the screen */
+.controls select { max-width: 100%; min-width: 0; text-overflow: ellipsis; }
+.controls label { flex-wrap: wrap; max-width: 100%; }
+.controls input[type=range] { max-width: 100%; }
+@media (max-width: 560px) {
+  .controls select { width: 100%; }
+  .controls .readout { margin-left: 0; width: 100%; }
+}
+
+/* keep KaTeX's hidden MathML copy inside its formula so it can't widen the page on narrow screens */
+.katex { position: relative; }
+.katex .katex-mathml { left: 0; top: 0; }
+article p, article li { overflow-wrap: break-word; }
+@media (max-width: 560px) {
+  .katex-display { font-size: 0.82em; }
+  .katex-display > .katex { padding-bottom: 4px; }
+}

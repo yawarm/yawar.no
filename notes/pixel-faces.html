@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>What are 500 pixel faces made of? – Yawar Mahmood</title>
-<meta name="description" content="Non-negative matrix factorisation took a pile of tiny 24×24 faces and, without being told, pulled out hair, glasses and beards as separate parts.">
+<meta name="description" content="Non-negative matrix factorisation of 500 small pixel faces, used for compression and denoising. The building blocks it finds are parts like hair, glasses and beards.">
 <script>(()=>{let t=null;try{t=localStorage.getItem('theme')}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});if(window.fitMath)fitMath()"></script>
 </head>
 <body>
 <header class="wrap bar">
@@ -23,67 +23,60 @@
   <div class="article-head">
     <p class="kicker">note</p>
     <h1>What are 500 pixel faces made of?</h1>
-    <p class="lede">Non-negative matrix factorisation took a pile of tiny 24×24 faces and, without being told, pulled out hair, glasses and beards as separate parts.</p>
+    <p class="lede">Non-negative matrix factorisation of 500 small pixel faces, used for compression and denoising. The building blocks it finds are parts like hair, glasses and beards.</p>
     <p class="meta">2022 · 4 min read</p>
   </div>
   <article>
-<p>It started with a very practical question: <b>how do you store images using less space?</b> Our tool was non-negative matrix factorisation (NMF), and our dataset was 500 tiny 24 × 24 pixel-art faces, each with colour and transparency channels.</p>
+<p>This project was about storing images more efficiently. We used non-negative matrix factorisation (NMF) on 500 small 24 × 24 pixel-art faces, which have colour channels and a transparency channel.</p>
 
 <h2>The idea</h2>
-<p>Flatten every image into a column and stack them into one big matrix \(A \in \mathbb R_{\ge 0}^{n\times m}\), one column per image. NMF approximates it as a product of two smaller non-negative matrices:</p>
-$$A \approx WH, \qquad W \in \mathbb R_{\ge 0}^{n\times d},\quad H \in \mathbb R_{\ge 0}^{d\times m}.$$
-<ul>
-<li>The columns of \(W\) are \(d\) <b>building blocks</b>, each one an image-sized pattern.</li>
-<li>Column \(j\) of \(H\) says how much of each building block image \(j\) uses.</li>
-</ul>
-<p>Instead of \(nm\) numbers you store \(d(n + m)\). Our RGB images have \(n = 24 \cdot 24 \cdot 3 = 1728\) values each (we handled transparency separately), and with \(m = 500\) images the full matrix holds 864,000 numbers. With \(d = 64\), the factors hold about 143,000, roughly 17%.</p>
+<p>We flatten each image into a column and put them next to each other in a matrix \(A \in \mathbb R_{\ge 0}^{n\times m}\), with one column per image. NMF approximates this matrix as a product of two smaller matrices, where neither has negative entries:</p>
+$$\begin{gathered}A \approx WH, \\ W \in \mathbb R_{\ge 0}^{n\times d},\quad H \in \mathbb R_{\ge 0}^{d\times m}.\end{gathered}$$
+<p>The columns of \(W\) are \(d\) building blocks, each with the same size as an image, and column \(j\) of \(H\) says how much of each building block image \(j\) uses.</p>
+<p>So we store \(d(n + m)\) numbers and not \(nm\). Our RGB images have \(n = 24 \cdot 24 \cdot 3 = 1728\) values each (we handled transparency separately), and with \(m = 500\) images the full matrix has 864,000 numbers. With \(d = 64\), the two factors have about 143,000, which is roughly 17%.</p>
 
 <h2>The algorithm</h2>
-<p>We want to minimise the Frobenius norm \(\lVert A - WH\rVert_F\) under the constraint that nothing is negative. Lee and Seung's multiplicative update rules do exactly that, with \(\odot\) and \(\oslash\) as elementwise multiplication and division:</p>
-$$H \leftarrow H \odot \big(W^\top A\big) \oslash \big(W^\top W H\big), \qquad W \leftarrow W \odot \big(A H^\top\big) \oslash \big(W H H^\top\big).$$
-<p>Because every update multiplies by a ratio of non-negative numbers, anything that starts non-negative stays non-negative. No projections or clipping needed, and the error never increases from one iteration to the next:</p>
+<p>We want to minimise the Frobenius norm \(\lVert A - WH\rVert_F\), with the constraint that nothing is negative. The multiplicative update rules by Lee and Seung do this, where \(\odot\) and \(\oslash\) are elementwise multiplication and division:</p>
+$$\begin{gathered}H \leftarrow H \odot \big(W^\top A\big) \oslash \big(W^\top W H\big), \\ W \leftarrow W \odot \big(A H^\top\big) \oslash \big(W H H^\top\big).\end{gathered}$$
+<p>Each update multiplies by a ratio of non-negative numbers, so entries that start non-negative stay non-negative. The error also never increases from one iteration to the next:</p>
 $$\lVert A - W_{k+1}H_{k+1}\rVert_F \le \lVert A - W_kH_k\rVert_F.$$
-<p>Each iteration is dominated by matrix products costing \(O(nmd)\), so runtime grows roughly linearly with \(d\), which is exactly what we measured.</p>
+<p>The most expensive part of each iteration is matrix multiplication, which costs \(O(nmd)\), so the runtime grows roughly linearly with \(d\). This is also what we measured.</p>
 
-<h3>Sanity checks on tiny matrices</h3>
-<p>Before touching images, we tested on small matrices. Factorising the \(2\times2\) identity with \(d = 1\) loses information (error \(1.00\)), because a rank-1 product can't represent two independent directions. With \(d = 2\) the error dropped to \(6.4\times10^{-10}\). The general rule: once \(d\) reaches the rank of the matrix, NMF can drive the error towards zero. Our image matrix had rank 406.</p>
+<h3>Testing on small matrices</h3>
+<p>Before using the images, we tested the method on small matrices. For the \(2\times2\) identity matrix with \(d = 1\) the error is \(1.00\), since a rank one product cannot represent two independent directions. With \(d = 2\) the error was \(6.4\times10^{-10}\). In general, when \(d\) is at least the rank of the matrix, the error can be made close to zero. The rank of our image matrix was 406.</p>
 
 <h2>The building blocks are parts</h2>
-<p>Something I didn't expect came before any factorisation: the <b>mean face</b> of the dataset still looked clearly like a face. The designs are so similar that averaging them doesn't produce a mess, just a slightly blurry character with a cloud of possible accessories around it.</p>
-<p>Because nothing can be negative, NMF can't build a face by adding <em>and subtracting</em> patterns. It can only <em>add</em> pieces together. So the building blocks in \(W\) turned out to be recognisable parts: hairstyles, glasses, beards and face shapes. Nobody told it what a beard is.</p>
-<div class="demo mini" id="mini-parts"><p class="how"><b>Try:</b> drag the weights. <b>Notice:</b> every face is just building blocks <em>added</em> together. That's one column of H. Because weights can't be negative, the blocks have to be real parts, like a hat or a beard.</p><canvas id="c-parts" aria-label="interactive illustration"></canvas><div class="controls"><label>hat <input type="range" id="parts-hat" min="0" max="100" value="100"></label><label>glasses <input type="range" id="parts-gl" min="0" max="100" value="0"></label><label>beard <input type="range" id="parts-be" min="0" max="100" value="60"></label><label>smile <input type="range" id="parts-sm" min="0" max="100" value="100"></label></div></div>
+<p>Before doing any factorisation, we computed the mean face of the dataset, and it still clearly looks like a face. The faces are so similar that the average is a slightly blurry character with a cloud of possible accessories around it.</p>
+<p>Since nothing can be negative, NMF can only build a face by adding building blocks together, and never by subtracting them. As a result, the building blocks in \(W\) turned out to be recognisable parts like hairstyles, glasses, beards and face shapes, even though the method was never told what a beard is.</p>
+<div class="demo mini" id="mini-parts"><p class="how">When you change the weights, you can see that each face is a sum of building blocks, which is one column of H. Since the weights cannot be negative, the blocks end up as parts like a hat or a beard.</p><canvas id="c-parts" aria-label="interactive illustration"></canvas><div class="controls"><label>hat <input type="range" id="parts-hat" min="0" max="100" value="100"></label><label>glasses <input type="range" id="parts-gl" min="0" max="100" value="0"></label><label>beard <input type="range" id="parts-be" min="0" max="100" value="60"></label><label>smile <input type="range" id="parts-sm" min="0" max="100" value="100"></label></div></div>
 <figure><div class="frame" style="background:#000"><img src="../img/nmf-attributes.png" alt="Grid of NMF basis images on black: separate hairstyles, glasses, beards and face shapes." loading="lazy" style="background:#000"></div>
-<figcaption>Some of the building blocks NMF learnt. Each tile is one column of W.</figcaption></figure>
-<p>With \(d = 25\) each block mixes several features (beard, glasses, hair and face in one). As \(d\) grows, they split into finer and finer parts. Reconstructing all images from \(d = 64\) blocks preserved the shapes remarkably well (error 39.70), though the colours came out a little brighter and washed out.</p>
+<figcaption>Some of the building blocks NMF found. Each tile is one column of W.</figcaption></figure>
+<p>With \(d = 25\), each building block contains several features at once, like beard, glasses, hair and face together. When \(d\) increases, they split into smaller parts. Reconstructing all the images from \(d = 64\) building blocks kept the shapes very well (error 39.70), but the colours became somewhat brighter.</p>
 
 <h2>Denoising</h2>
-<p>Next we added Gaussian noise with standard deviation \(\sigma\) to the colour channels and asked: is the reconstruction from a noisy factorisation closer to the <em>clean</em> image than the noisy image itself? With \(\sigma = 0.1\), the noisy images were 42.00 away from the originals. The question is which \(d\) to choose.</p>
+<p>Next we added Gaussian noise with standard deviation \(\sigma\) to the colour channels, and checked if the reconstruction from a factorisation of the noisy images is closer to the original images than the noisy images are. With \(\sigma = 0.1\), the noisy images had an error of 42.00 compared to the originals. The question is then which \(d\) to use.</p>
 <figure><div class="frame"><img src="../img/nmf-error.png" alt="Reconstruction error against d: falls steeply, bottoms out, then rises slowly." loading="lazy"></div>
-<figcaption>Error against the clean images as a function of d. The horizontal line is the noisy image itself.</figcaption></figure>
-<ul>
-<li><b>Too few blocks:</b> the reconstruction misses real details (underfitting).</li>
-<li><b>Too many blocks:</b> the factorisation starts learning the noise as well (overfitting).</li>
-<li><b>In between:</b> the reconstruction is closer to the clean images than the noisy input was.</li>
-</ul>
-<p>We searched for the best \(d\) at three noise levels:</p>
+<figcaption>Error compared to the clean images as a function of d. The horizontal line is the error of the noisy images.</figcaption></figure>
+<p>For small \(d\) the reconstruction misses details in the images (underfitting). For large \(d\) the factorisation also starts to fit the noise (overfitting). In between, the reconstruction is closer to the clean images than the noisy images were.</p>
+<p>We found the best \(d\) for three noise levels:</p>
 <table>
 <tr><th>Noise \(\sigma\)</th><th>Best \(d\)</th><th>Stored size vs. original</th></tr>
 <tr><td>0.05</td><td>334</td><td>86.1%</td></tr>
 <tr><td>0.10</td><td>171</td><td>44.1%</td></tr>
 <tr><td>0.20</td><td>110</td><td>28.4%</td></tr>
 </table>
-<p>The pattern makes sense: the more noise, the earlier extra blocks start fitting noise instead of signal, so the best \(d\) drops. With \(\sigma = 0.1\), the best reconstruction was <b>both closer to the clean images than the noisy data and less than half the size</b>. The catch is that finding that \(d\) means factorising many times, which is expensive.</p>
-<p>It's also a concrete example of the bias–variance trade-off: a curve with a minimum you can actually find.</p>
+<p>With more noise, extra building blocks start to fit the noise earlier, so the best \(d\) decreases. With \(\sigma = 0.1\), the best reconstruction was both closer to the clean images than the noisy data, and less than half the size. Finding this \(d\) is expensive though, since it means factorising the matrix many times.</p>
+<p>This is a concrete example of the bias–variance trade-off, where the error curve has a minimum that we can actually find.</p>
 
 <h2>Try it yourself</h2>
-<p>Here NMF runs live in your browser. The faces below are generated from a handful of hidden parts (a face, eyes, a smile, a hat, glasses, a beard) mixed at random. NMF only sees the finished faces, never the parts. Press start and watch the building blocks appear.</p>
+<p>Here NMF runs in the browser. The faces below are generated from a few hidden parts (a face, eyes, a smile, a hat, glasses and a beard) that are combined at random. NMF only sees the finished faces and never the parts. When you press start, you can see the building blocks appear.</p>
 
-<div class="demo"><p class="how"><b>Try:</b> watch it run, then change d and press start again. <b>Notice:</b> the building blocks start as noise and turn into separate parts: hat, glasses, beard, smile.</p><canvas id="cv" aria-label="Find the parts interactive demo"></canvas><div class="controls"><button id="nmfgo" class="btn primary">start</button><label>building blocks d <input type="range" id="nmfd" min="2" max="9" value="6"><b id="nmfdv">6</b></label><span class="readout" id="nmferr"></span></div></div>
-<p class="note-small">Top row: some of the input faces. Bottom row: the building blocks (columns of W) NMF has found so far. Too few blocks and parts get merged; enough, and each block becomes one part.</p>
+<div class="demo"><p class="how">The demo starts by itself, and you can change d and press start again. The building blocks start as noise and become separate parts like a hat, glasses, a beard and a smile.</p><canvas id="cv" aria-label="Find the parts interactive demo"></canvas><div class="controls"><button id="nmfgo" class="btn primary">start</button><label>building blocks d <input type="range" id="nmfd" min="2" max="9" value="6"><b id="nmfdv">6</b></label><span class="readout" id="nmferr"></span></div></div>
+<p class="note-small">The top row shows some of the input faces, and the bottom row shows the building blocks (columns of W) found so far. With too few blocks some parts are merged, and with enough blocks each block becomes one part.</p>
 <!--DEMO-->
 <p class="closer">The notebook is on <a href="https://github.com/yawarm/TMA4320-Introduction-to-Scientific-Computation">GitHub</a>.</p>
 </article>
-  <div class="next"><a href="cells-that-organise-themselves.html">← Cells that organise themselves</a><a href="when-does-a-ship-capsize.html">When does a ship capsize? →</a></div>
+  <div class="next"><a href="cells-that-organise-themselves.html">← How do molecules form droplets without a membrane?</a><a href="when-does-a-ship-capsize.html">When does a ship capsize? →</a></div>
 </main>
 <footer class="wrap"><span>© 2026 Yawar Mahmood</span></footer>
 <script src="../theme.js"></script>
@@ -148,14 +141,16 @@ function tile(ctx, v, x0, y0, px, col) { const mx = Math.max(1, ...v); for (let 
   ctx.fillRect(x0 + (i % S) * px, y0 + Math.floor(i / S) * px, px, px); } ctx.globalAlpha = 1; }
 function draw() {
   const wts = { face: 1, eyes: 1, hat: $('hat').value / 100, gl: $('gl').value / 100, be: $('be').value / 100, sm: $('sm').value / 100 };
-  const { ctx, w, h } = fitCanvas(c, 190); ctx.clearRect(0, 0, w, h);
-  const px = 6, gap = 14; let x = 10; ctx.font = '12px IBM Plex Mono, monospace';
+  const W0 = c.clientWidth, px = Math.max(2, Math.min(6, Math.floor((W0 * 0.58 - 40) / (3 * S)))), gap = 14, rowH = S * px + 26;
+  const fpx = Math.max(4, Math.min(10, Math.floor(W0 * 0.3 / S)));
+  const { ctx, w, h } = fitCanvas(c, Math.max(2 * rowH + 20, S * fpx + 40)); ctx.clearRect(0, 0, w, h);
+  ctx.font = '12px IBM Plex Mono, monospace';
   const keys = Object.keys(wts);
-  keys.forEach((k, i) => { tile(ctx, P[k], x, 40, px, css('--soft')); ctx.fillStyle = css('--ink'); ctx.fillText(wts[k].toFixed(1) + '×', x, 30);
-    x += S * px + (i < keys.length - 1 ? gap : 0); if (i < keys.length - 1) { ctx.fillText('+', x - 11, 80); } });
-  ctx.fillText('=', x + 8, 80);
+  keys.forEach((k, i) => { const x = 10 + (i % 3) * (S * px + gap), y = 26 + Math.floor(i / 3) * rowH;
+    tile(ctx, P[k], x, y, px, css('--soft')); ctx.fillStyle = css('--ink'); ctx.fillText(wts[k].toFixed(1) + '×', x, y - 6); });
+  const gx = 10 + 3 * (S * px + gap); ctx.fillStyle = css('--ink'); ctx.fillText('sum =', gx, h / 2 + 4);
   const face = new Float64Array(N); keys.forEach(k => { for (let i = 0; i < N; i++) face[i] += wts[k] * P[k][i]; });
-  tile(ctx, face, x + 26, 22, 10, css('--tomato'));
+  tile(ctx, face, Math.min(w - S * fpx - 6, gx + 52), (h - S * fpx) / 2, fpx, css('--tomato'));
 }
 for (const k of ['hat', 'gl', 'be', 'sm']) $(k).addEventListener('input', draw); addEventListener('resize', draw); draw();
 

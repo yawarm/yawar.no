@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>An agent that reads door paperwork – Yawar Mahmood</title>
+<title>Can an AI agent read door paperwork? – Yawar Mahmood</title>
 <meta name="description" content="High-security door projects come with a lot of documentation. I built a LangGraph agent that takes instructions in plain language and does the reading.">
 <script>(()=>{let t=null;try{t=localStorage.getItem('theme')}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});if(window.fitMath)fitMath()"></script>
 </head>
 <body>
 <header class="wrap bar">
@@ -22,31 +22,26 @@
 <main class="narrow">
   <div class="article-head">
     <p class="kicker">note</p>
-    <h1>An agent that reads door paperwork</h1>
+    <h1>Can an AI agent read door paperwork?</h1>
     <p class="lede">High-security door projects come with a lot of documentation. I built a LangGraph agent that takes instructions in plain language and does the reading.</p>
     <p class="meta">2025 · 7 min read</p>
   </div>
   <article>
-<p><b>Rapp Bomek</b> makes high-security doors: fire-rated, burglar-resistant, soundproof, often all at once. Every project comes with a pile of documentation, and someone has to read it, find the requirements that matter and turn them into structured information. It's slow, repetitive and easy to get wrong.</p>
-<p>As an AI engineer at Astar Consulting, I built an <b>agentic command-line system</b> for them with <b>LangGraph</b> and <b>LangChain</b>. You give it an instruction in plain language, and it carries out the multi-step work on the project documentation itself, replacing manual review with automated extraction and structuring.</p>
+<p>Rapp Bomek makes high-security doors, such as fire doors, burglar resistant doors and soundproof doors. Each project comes with a lot of documentation, and someone has to read it, find the requirements that matter and write them down in a structured way. This takes time, and it is easy to make mistakes.</p>
+<p>As an AI engineer at Astar Consulting, I built a command-line agent for them with LangGraph and LangChain. You give it an instruction in plain language, and it does the steps on the project documentation itself. This replaced manual reading with automatic extraction and structuring.</p>
 
-<h2>Why not just one big prompt?</h2>
-<p>The naive approach is to paste everything into a language model and ask. That breaks down quickly for real project documentation:</p>
-<ul>
-<li><b>It doesn't fit.</b> Project documents are long, and even large context windows get expensive and less reliable when filled to the brim.</li>
-<li><b>One shot is fragile.</b> Real tasks have several steps: find the right documents, read the right sections, extract the details, check them, put them together.</li>
-<li><b>You can't check it.</b> A wall of text from a model is hard to verify. Structured output, step by step, is something a person can audit.</li>
-</ul>
-<p>An <b>agent</b> solves this by letting the model decide what to do next, using tools, in a loop, until the task is done.</p>
+<h2>One prompt or an agent</h2>
+<p>The simplest approach would be to put all the documents into a language model and ask the question. For real project documentation this does not work very well. The documents are long, and even large context windows become expensive and less reliable when they are full. Real tasks also have several steps, like finding the right documents, reading the right sections, extracting the details, checking them and putting them together. Finally, a long answer in plain text is hard to check.</p>
+<p>An agent lets the model decide what to do next, using tools, in a loop, until the task is done.</p>
 
 <h2>Agents as graphs</h2>
-<p>LangGraph models an agent as a <b>state machine</b>. There's a shared state \(S\), for example the instruction, the documents found so far and the extracted results. Each <b>node</b> is a function that reads the state and returns an update:</p>
+<p>LangGraph models an agent as a state machine. There is a shared state \(S\), which can contain the instruction, the documents found so far and the extracted results. Each node is a function that reads the state and returns an update:</p>
 $$S_{t+1} = S_t \oplus f_{v_t}(S_t),$$
-<p>where \(v_t\) is the node running at step \(t\) and \(\oplus\) merges the update into the state. <b>Edges</b> decide which node runs next. Some are fixed ("after extracting, always validate"), and some are <b>conditional</b>, chosen from the state or by the model itself ("is the answer complete, or do we need to search again?"):</p>
+<p>where \(v_t\) is the node that runs in step \(t\) and \(\oplus\) merges the update into the state. The edges decide which node runs next. Some edges are fixed, for example that extraction is always followed by validation, and some are conditional and depend on the state or on the model:</p>
 $$v_{t+1} = \operatorname{route}(v_t, S_{t+1}).$$
-<p>Cycles are allowed, which is the whole point: plan, act, look at the result, and decide again. That's the classic <b>reason–act loop</b>, but with explicit structure around it, so you control where the model has freedom and where it doesn't.</p>
+<p>The graph can have cycles, so the agent can plan, act, look at the result and decide again. This is the usual reason-and-act loop, but with an explicit structure around it, which makes it possible to control where the model is free to choose.</p>
 
-<h3>The pattern, in code</h3>
+<h3>A minimal example</h3>
 <p>A minimal sketch of the pattern (not the production code) looks like this:</p>
 <pre><code>from typing import TypedDict
 from langgraph.graph import StateGraph, END
@@ -73,34 +68,25 @@ agent = graph.compile()
 agent.invoke({"instruction": "...", "documents": [], "findings": [], "done": False})</code></pre>
 
 <h2>Structured output</h2>
-<p>In a system like this, I think the most important choice is to have the model fill in <b>schemas</b> instead of writing prose. If every extracted item has to be, say, a door with a set of typed fields and a reference back to where it was found, then:</p>
-<ul>
-<li>the output can be validated automatically (missing fields, impossible values),</li>
-<li>a failed validation can send the agent back for another look instead of silently passing on a guess,</li>
-<li>and a person can check any value against its source in seconds.</li>
-</ul>
-<div class="demo mini" id="mini-schema"><p class="how"><b>Try:</b> untick a field, as if the model failed to find it. <b>Notice:</b> the validator catches it and sends the agent back to look again, instead of passing a guess on to a person.</p><div id="schema-table"></div><p id="schema-verdict" class="note-small" style="margin:6px 2px 0"></p></div>
-<p>Mathematically, you're turning an open-ended generation problem into something closer to filling in a form, which is a much easier problem to get right and to test.</p>
+<p>In a system like this, I think the most important choice is to let the model fill in schemas, and not write free text. If every extracted item has to be a door with typed fields and a reference to where it was found, the output can be validated automatically, for example for missing fields or values that are not possible. If the validation fails, the agent can go back and look again, and a person can check any value against its source quickly.</p>
+<div class="demo mini" id="mini-schema"><p class="how">Untick a field, as if the model did not find it. The validator catches it and sends the agent back to look again, so a guess is not passed on to a person.</p><div id="schema-table"></div><p id="schema-verdict" class="note-small" style="margin:6px 2px 0"></p></div>
+<p>This turns an open-ended generation problem into something closer to filling in a form, which is much easier to get right and to test.</p>
 
 <h2>A command line</h2>
-<p>The interface is a command line rather than a web app. You describe a task in your own words and get structured results back, and rerunning a task with a slightly different instruction is just one more line.</p>
+<p>The interface is a command line. You describe a task in your own words and get structured results back, and running a task again with a slightly different instruction is just one more line.</p>
 
-<h2>What I learned</h2>
-<ul>
-<li><b>Give the model freedom only where you need it.</b> Fixed edges for the steps that should always happen, conditional edges for real decisions.</li>
-<li><b>Schemas beat prompts.</b> Structured output with validation catches more errors than any amount of prompt tuning.</li>
-<li><b>Keep the human in the loop where it's cheap.</b> The goal is to replace the reading, not the judgement: people check results instead of producing them.</li>
-</ul>
+<h2>Some things I learned</h2>
+<p>It worked best to give the model freedom only where it was needed, with fixed edges for the steps that should always happen and conditional edges for the actual decisions. Structured output with validation caught more errors than changing the prompts. The goal was to replace the reading and not the judgement, so people check the results and do not have to produce them.</p>
 
 <h2>Try it yourself</h2>
-<p>A replay of how an agent like this works through a task, step by step. The documents and project here are <b>made up</b> for the demo; the shape of the loop is the real thing. Pick an instruction and step through it to watch the state fill up.</p>
+<p>This is a replay of how an agent like this works through a task, step by step. The project and the documents are made up for the demo, but the loop is the same. Pick an instruction and step through it to see the state fill up.</p>
 
-<div class="demo"><p class="how"><b>Try:</b> step through, then pick the other instruction. <b>Notice:</b> in the first task the check step finds a missing value and sends the agent back to plan, instead of guessing.</p><canvas id="cv" aria-label="Watch the agent work interactive demo"></canvas><div class="controls"><select id="task" class="btn"><option value="0">"Which doors need fire rating EI60?"</option><option value="1">"List doors with sound requirements over 35 dB"</option></select>
-<button id="aprev" class="btn">← back</button><button id="anext" class="btn primary">next step →</button><span class="readout" id="astep"></span></div><pre id="astate" style="margin:12px 0 0;max-height:220px;overflow:auto;font-size:0.76rem"></pre></div>
-<p class="note-small">Made-up project and documents. In the real system the documents, fields and steps are specific to Rapp Bomek's work.</p>
+<div class="demo"><p class="how">Step through the task, and then choose the other instruction. In the first task the check step finds a missing value and sends the agent back to plan.</p><canvas id="cv" aria-label="Watch the agent work interactive demo"></canvas><div class="controls"><select id="task" class="btn"><option value="0">"Which doors need fire rating EI60?"</option><option value="1">"List doors with sound requirements over 35 dB"</option></select>
+<button id="aprev" class="btn">← back</button><button id="anext" class="btn primary">next step →</button><span class="readout" id="astep"></span></div><p id="acap" class="note-small" style="margin:10px 2px 0;min-height:2.6em"></p><pre id="astate" style="margin:12px 0 0;max-height:220px;overflow:auto;font-size:0.76rem"></pre></div>
+<p class="note-small">The project and the documents are made up. In the actual system, the documents, fields and steps are specific to the work at Rapp Bomek.</p>
 <!--DEMO-->
 </article>
-  <div class="next"><a href="bike-fitting-from-a-phone.html">← Bike fitting from a phone camera</a><a href="teaching-a-camera-10000-products.html">Teaching a camera 10,000 products →</a></div>
+  <div class="next"><a href="bike-fitting-from-a-phone.html">← Can a phone camera fit your bike?</a><a href="teaching-a-camera-10000-products.html">How does a checkout recognise 10,000 products? →</a></div>
 </main>
 <footer class="wrap"><span>© 2026 Yawar Mahmood</span></footer>
 <script src="../theme.js"></script>
@@ -117,14 +103,14 @@ const c = document.getElementById('cv');
 const nodes = { plan: [0.12, 0.5], search: [0.36, 0.22], extract: [0.62, 0.22], check: [0.62, 0.78], answer: [0.88, 0.5] };
 const TASKS = [
   { q: 'Which doors need fire rating EI60?', steps: [
-    ['plan', 'Decide what to look for: door schedule + fire strategy.', { plan: ['find door schedule', 'find fire requirements', 'match door IDs'] }],
+    ['plan', 'Decide what to look for, which is the door schedule and the fire strategy.', { plan: ['find door schedule', 'find fire requirements', 'match door IDs'] }],
     ['search', 'Find the relevant documents.', { documents: ['door_schedule.pdf (p. 3–7)', 'fire_strategy.pdf (§4.2)'] }],
     ['extract', 'Pull structured fields from each match.', { findings: [{ door: 'D-104', fire: 'EI60', source: 'door_schedule p.4' }, { door: 'D-211', fire: 'EI60', source: 'door_schedule p.6' }, { door: 'D-305', fire: '?', source: 'fire_strategy §4.2' }] }],
     ['check', 'Validate against the schema: D-305 has no rating in the schedule → go back.', { issues: ['D-305: fire rating missing'] }],
     ['plan', 'New plan: look up D-305 in the fire strategy drawings.', { plan: ['search drawings for D-305'] }],
-    ['search', 'Found it.', { documents: ['fire_plan_level3.pdf'] }],
+    ['search', 'The fire plan for level 3 has an entry for D-305.', { documents: ['fire_plan_level3.pdf'] }],
     ['extract', 'D-305 is in a fire compartment wall → EI60.', { findings: [{ door: 'D-305', fire: 'EI60', source: 'fire_plan_level3' }] }],
-    ['check', 'All fields present, all sources cited.', { issues: [] }],
+    ['check', 'All fields are filled in, and every value has a source.', { issues: [] }],
     ['answer', 'Return a table: 3 doors, each with its source.', { answer: 'D-104, D-211, D-305 → EI60' }] ] },
   { q: 'List doors with sound requirements over 35 dB', steps: [
     ['plan', 'Look for acoustic requirements per room, then map rooms to doors.', { plan: ['find acoustic spec', 'map rooms → doors'] }],
@@ -151,7 +137,7 @@ function draw() {
     ctx.fillStyle = on ? css('--tomato') : css('--card'); ctx.strokeStyle = on ? 'transparent' : css('--line');
     ctx.beginPath(); ctx.roundRect(x - bw / 2, y - 17, bw, 34, 17); ctx.fill(); ctx.stroke();
     ctx.fillStyle = on ? '#fff' : css('--ink'); ctx.font = '13px IBM Plex Mono, monospace'; ctx.textAlign = 'center'; ctx.fillText(n, x, y + 4); }
-  ctx.textAlign = 'left'; ctx.fillStyle = css('--ink'); ctx.font = '14px DM Sans, sans-serif'; ctx.fillText(text, 12, h - 14);
+  ctx.textAlign = 'left'; document.getElementById('acap').textContent = text;
   document.getElementById('astep').textContent = `step ${k + 1} / ${steps.length}`;
   document.getElementById('astate').textContent = 'state = ' + JSON.stringify(stateAt(), null, 2);
 }

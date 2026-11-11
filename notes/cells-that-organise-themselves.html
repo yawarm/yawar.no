@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cells that organise themselves – Yawar Mahmood</title>
-<meta name="description" content="Some organelles have no membrane at all. We used Monte Carlo simulation to watch charged molecules clump together on their own, and saw how temperature breaks them apart.">
+<title>How do molecules form droplets without a membrane? – Yawar Mahmood</title>
+<meta name="description" content="A Monte Carlo simulation of charged molecules that form clusters on their own, and how a higher temperature breaks the clusters up.">
 <script>(()=>{let t=null;try{t=localStorage.getItem('theme')}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});if(window.fitMath)fitMath()"></script>
 </head>
 <body>
 <header class="wrap bar">
@@ -22,27 +22,27 @@
 <main class="narrow">
   <div class="article-head">
     <p class="kicker">note</p>
-    <h1>Cells that organise themselves</h1>
-    <p class="lede">Some organelles have no membrane at all. We used Monte Carlo simulation to watch charged molecules clump together on their own, and saw how temperature breaks them apart.</p>
+    <h1>How do molecules form droplets without a membrane?</h1>
+    <p class="lede">A Monte Carlo simulation of charged molecules that form clusters on their own, and how a higher temperature breaks the clusters up.</p>
     <p class="meta">2022 · 4 min read</p>
   </div>
   <article>
-<p>Most organelles in a cell sit inside a membrane. But some don't: they're just dense droplets of molecules that have gathered together on their own. How does that happen without a wall to hold them in? We tried to understand one ingredient behind it: <b>charged molecules attracting each other, while the whole system drifts towards the lowest energy it can find.</b> No analytical solution exists for this, so we simulated it.</p>
+<p>Most organelles in a cell are surrounded by a membrane, but some are not. They are dense droplets of molecules that have gathered on their own. In this project we looked at two conditions that are important for forming these structures: electrostatic attraction between charged molecules, and the fact that physical systems tend towards the lowest possible energy. This is too complex to solve analytically, so we used Monte Carlo simulations.</p>
 
 <h2>The setup</h2>
-<p>We put \(2M\) charged monomers on an \(N \times N\) grid: \(M\) positive (blue) and \(M\) negative (red). The grid wraps around at the edges, so the right side continues on the left and the bottom continues at the top. Technically it's the surface of a torus, so there are no walls for molecules to get stuck against.</p>
+<p>We place \(2M\) charged monomers on an \(N \times N\) grid, where \(M\) are positive (blue) and \(M\) are negative (red). The grid has periodic boundary conditions, so the column to the right of the rightmost column is the leftmost column, and the same for the rows. This is the same as the surface of a torus, and it means there are no edges in the system.</p>
 
 <h2>The energy</h2>
-<p>Only neighbours interact: the four squares directly above, below, left and right. For each neighbouring pair we used Coulomb's law with the charges of an electron, screened by water:</p>
-$$E = \frac12 \sum_{i}\sum_{j \in \mathcal N(i)} \alpha\, q_i q_j, \qquad \alpha = \frac{e^2}{4\pi\varepsilon_0\varepsilon_r a^2},$$
-<p>with \(q \in \{-1, +1\}\), relative permittivity \(\varepsilon_r = 78\) for water and grid spacing \(a = 23\,\mu\text{m}\). Opposite charges side by side give negative energy; equal charges give positive. The \(\tfrac12\) stops each pair being counted twice. Ignoring everything beyond the nearest neighbours is a simplification, but Coulomb interactions fall off quickly and the solvent screens them further.</p>
+<p>We only include interactions between neighbouring monomers, meaning the four squares above, below, left and right. For each neighbouring pair we use Coulomb's law with the charge of an electron, screened by water:</p>
+$$\begin{gathered}E = \frac12 \sum_{i}\sum_{j \in \mathcal N(i)} \alpha\, q_i q_j, \\ \alpha = \frac{e^2}{4\pi\varepsilon_0\varepsilon_r a^2},\end{gathered}$$
+<p>with \(q \in \{-1, +1\}\), relative permittivity \(\varepsilon_r = 78\) for water and grid spacing \(a = 23\,\mu\text{m}\). Opposite charges next to each other give negative energy, and equal charges give positive energy. The factor \(\tfrac12\) is there because each pair is counted twice. In reality there is an interaction between all the monomers, but it decreases quickly with distance and the water screens it further, so this simplification gives a relatively small error.</p>
 
 <h2>The Metropolis algorithm</h2>
-<p>Each step: pick a random molecule and a random direction. If the target square is occupied, nothing happens. Otherwise compute the change in energy \(\Delta E\), and accept the move with probability</p>
+<p>In each step we pick a random monomer and a random direction. If the square in that direction is occupied, nothing happens. Otherwise we compute the change in energy \(\Delta E\), and accept the move with probability</p>
 $$P(\text{accept}) = \min\!\left(1,\; e^{-\Delta E / k_B T}\right).$$
-<p>Downhill moves are always taken. Uphill moves are sometimes taken, more often when it's hot. Run that long enough and the configurations follow the Boltzmann distribution \(P(\text{state}) \propto e^{-E/k_BT}\): low energy is likely, but heat keeps stirring things up.</p>
-<div class="demo mini" id="mini-accept"><p class="how"><b>Try:</b> change the temperature. <b>Notice:</b> moves that lower the energy (left of zero) are always accepted. Uphill moves get exponentially less likely, much more so when it's cold.</p><canvas id="c-accept" aria-label="interactive illustration"></canvas><div class="controls"><label>temperature <input type="range" id="accept-t" min="100" max="800" value="250"><b id="accept-tv"></b></label><span class="readout" id="accept-out"></span></div></div>
-<p>The core of it, from our code:</p>
+<p>Moves that lower the energy are always accepted, and moves that increase it are accepted with a probability that is higher when the temperature is high. If we run this for long enough, the states follow the Boltzmann distribution \(P(\text{state}) \propto e^{-E/k_BT}\), where low energy states are the most likely.</p>
+<div class="demo mini" id="mini-accept"><p class="how">If you change the temperature, you can see that moves that lower the energy (left of zero) are always accepted, while moves that increase it become exponentially less likely, especially at low temperature.</p><canvas id="c-accept" aria-label="interactive illustration"></canvas><div class="controls"><label>temperature <input type="range" id="accept-t" min="100" max="800" value="250"><b id="accept-tv"></b></label><span class="readout" id="accept-out"></span></div></div>
+<p>The main part of our code looks like this:</p>
 <pre><code>delta_E = new_contribution - old_contribution
 if delta_E &lt;= 0 or random.random() &lt;= np.exp(-beta * delta_E):
     points[random_index] = move_to      # accept
@@ -51,42 +51,38 @@ else:
     grid[random_monomer] = charge       # revert
     grid[move_to] = 0.
     return 0.</code></pre>
-<p>Because only the moved molecule's neighbours change, \(\Delta E\) costs four lookups instead of recomputing the whole grid, which is what made millions of steps feasible (with Numba's <code>@njit</code> doing the rest).</p>
+<p>Only the neighbours of the moved monomer change, so \(\Delta E\) only needs four lookups and not the whole grid. Together with Numba's <code>@njit</code>, this made it possible to run millions of steps.</p>
 
 <h2>Temperature</h2>
-<p>We ran 50,000 steps on a 15 × 15 grid with 25 positive and 25 negative monomers, at two temperatures:</p>
+<p>We ran 50,000 steps on a 15 × 15 grid with 25 positive and 25 negative monomers, at two different temperatures:</p>
 <figure><div class="frame"><img src="../img/clusters-200k.png" alt="Monomer grid and its clusters after 50,000 iterations at 200 K: large, tightly packed clusters." loading="lazy"></div>
-<figcaption>200 K: molecules have gathered into large clusters (right panel colours each cluster).</figcaption></figure>
+<figcaption>200 K. The monomers have formed large clusters, shown with one colour per cluster on the right.</figcaption></figure>
 <figure><div class="frame"><img src="../img/clusters-500k.png" alt="The same system at 500 K: small, scattered clusters." loading="lazy"></div>
-<figcaption>500 K: the extra thermal energy keeps breaking clusters apart.</figcaption></figure>
-<p>At 200 K the system orders itself into big clusters. At 500 K it looked about as chaotic at the end as at the start.</p>
+<figcaption>500 K. The clusters stay small and scattered.</figcaption></figure>
+<p>At 200 K the system forms large clusters. At 500 K it seems to be indifferent to the energy, and it looks about as disordered at the end as at the start.</p>
 
 <h3>Burn-in</h3>
-<p>To measure average cluster size across temperatures from 100 K to 1000 K, we first had to let each run reach equilibrium. Cold systems are slow, since uphill moves are rare, so the burn-in shrinks with temperature:</p>
-$$t_{\text{equil}}(T) = t_{\max}\,e^{-s(T - T_l)} + C, \qquad t_{\max} = 10^6,\; s = \tfrac{1}{200},\; T_l = 100\text{ K},\; C = 10^4.$$
-<p>After that we took 1000 measurements, 1000 steps apart. Average cluster size dropped steadily as temperature rose. We also noticed that at low temperatures, two runs disagreed more, a sign that the coldest systems still hadn't fully settled.</p>
+<p>To measure the average cluster size for temperatures between 100 K and 1000 K, each run first has to reach equilibrium. Systems at low temperature are slow, since moves that increase the energy are rarely accepted, so we let the burn-in decrease with temperature:</p>
+$$\begin{gathered}t_{\text{equil}}(T) = t_{\max}\,e^{-s(T - T_l)} + C, \\ t_{\max} = 10^6,\; s = \tfrac{1}{200},\; T_l = 100\text{ K},\; C = 10^4.\end{gathered}$$
+<p>The constants were chosen by trying different values. After the burn-in we took 1000 measurements with 1000 steps between them. The average cluster size decreased as the temperature increased. At low temperatures, two runs also gave quite different results, which suggests that the coldest systems had not fully reached equilibrium.</p>
 
-<h2>From beads to chains</h2>
-<p>Next we joined the monomers into <b>polymers</b>: chains of \(L\) monomers that move together. Monomers in the same polymer don't interact with each other. We tried two kinds of moves:</p>
-<ul>
-<li><b>Rigid</b>: the whole polymer slides one square without changing shape.</li>
-<li><b>Medium flexibility</b>: parts of the polymer can move while it stays connected, so it can bend.</li>
-</ul>
+<h2>Polymers</h2>
+<p>Next we joined the monomers into polymers, which are chains of \(L\) monomers that move together. Monomers in the same polymer do not interact with each other. We tried two types of moves. With rigid moves the whole polymer moves one square without changing shape, and with medium flexibility moves parts of the polymer can move while it stays connected.</p>
 <figure><div class="frame"><img src="../img/polymers.png" alt="30x30 grid with 5 positive and 5 negative polymers before and after 100,000 flexible iterations at 200 K." loading="lazy"></div>
-<figcaption>Ten polymers on a 30 × 30 grid, before and after 100,000 flexible-move iterations at 200 K.</figcaption></figure>
-<p>Flexible polymers stretched out and wrapped around each other. That matters, because the energy is all at the borders: the longer the border between oppositely charged polymers, the lower the energy. Rigid polymers can't intertwine like that, so they end up stuck at a higher energy. Then we varied the length \(L\) from 3 to 39 and measured how the number and size of clusters changed.</p>
-<p>Nothing in the code tells the molecules to form droplets. The structure comes from the energy rule and the randomness alone.</p>
+<figcaption>Ten polymers on a 30 × 30 grid, before and after 100,000 steps with flexible moves at 200 K.</figcaption></figure>
+<p>The flexible polymers became longer and wrapped around each other. This affects the energy, since a longer border between polymers with opposite charge gives a lower energy. The rigid polymers cannot do this, so they end up with a higher energy. We also varied the length \(L\) from 3 to 39 and measured how the number and size of the clusters changed.</p>
+<p>Nothing in the code tells the molecules to form droplets, and the structure comes only from the energy and the random moves.</p>
 
 <h2>Try it yourself</h2>
-<p>A live version of the simulation. Each step picks a random molecule and tries to move it one square. Drag the temperature down and watch clusters appear; push it up and they melt away.</p>
+<p>This is a live version of the simulation. Each step picks a random molecule and tries to move it one square. If you lower the temperature, clusters form, and if you raise it, they break up again.</p>
 
-<div class="demo"><p class="how"><b>Try:</b> drag the temperature down to about 150 K and wait, then up to 700 K. <b>Notice:</b> cold molecules clump into droplets and the energy line drops; heat breaks them apart again.</p><canvas id="cv" aria-label="Molecules that clump together interactive demo"></canvas><div class="controls"><label>temperature <input type="range" id="temp" min="100" max="800" value="250"><b id="tempv">250 K</b></label>
+<div class="demo"><p class="how">Lower the temperature to about 150 K and wait, and then raise it to 700 K. At low temperature the molecules form clusters and the energy goes down, and at high temperature the clusters break up.</p><canvas id="cv" aria-label="Molecules that clump together interactive demo"></canvas><div class="controls"><label>temperature <input type="range" id="temp" min="100" max="800" value="250"><b id="tempv">250 K</b></label>
 <button id="shuffle" class="btn">shuffle</button><span class="readout" id="energy"></span></div><canvas id="spark" style="width:100%;display:block;margin-top:10px" aria-label="energy over time"></canvas><p class="note-small" style="margin-top:4px">energy over time (lower is more ordered)</p></div>
-<p class="note-small">The grid wraps around at the edges, like the surface of a doughnut, so there are no walls for molecules to hide against. Same trick as in the original simulation.</p>
+<p class="note-small">The grid has periodic boundary conditions, as in the original simulation, so there are no edges.</p>
 <!--DEMO-->
 <p class="closer">The notebook is on <a href="https://github.com/yawarm/TMA4320-Introduction-to-Scientific-Computation">GitHub</a>.</p>
 </article>
-  <div class="next"><a href="four-agents-one-pacman.html">← Four AI agents, one tmux session</a><a href="pixel-faces.html">What are 500 pixel faces made of? →</a></div>
+  <div class="next"><a href="four-agents-one-pacman.html">← What happens when four AI agents work as a team?</a><a href="pixel-faces.html">What are 500 pixel faces made of? →</a></div>
 </main>
 <footer class="wrap"><span>© 2026 Yawar Mahmood</span></footer>
 <script src="../theme.js"></script>
@@ -150,7 +146,8 @@ function draw() {
   for (let e = -2; e <= 4; e += 0.02) { const p = Math.min(1, Math.exp(-beta * e)); e === -2 ? ctx.moveTo(X(e), Y(p)) : ctx.lineTo(X(e), Y(p)); } ctx.stroke();
   ctx.fillStyle = css('--ink'); for (const k of [1, 2, 3, 4]) { const p = Math.exp(-beta * k); ctx.beginPath(); ctx.arc(X(k), Y(p), 4.5, 0, 7); ctx.fill(); }
   ctx.fillStyle = css('--faint'); ctx.font = '11px IBM Plex Mono, monospace';
-  ctx.fillText('ΔE < 0: always accepted', X(-1.9), Y(1) + 16); ctx.fillText('ΔE (bonds broken) →', w - 150, h - 8); ctx.fillText('P(accept)', 30, 12);
+  ctx.fillText('P(accept)', 30, 12); ctx.textAlign = 'right'; ctx.fillText(w < 480 ? 'x: bonds broken' : 'x-axis: ΔE in bonds broken', w - 10, 12); ctx.textAlign = 'left';
+  ctx.fillText('ΔE < 0: always', X(-1.9), Y(1) + 16);
   for (const k of [1, 2, 3, 4]) ctx.fillText(k, X(k) - 3, h - 8);
   $('out').textContent = `breaking 1 bond: ${(100 * Math.exp(-beta)).toFixed(1)}% · 2 bonds: ${(100 * Math.exp(-2 * beta)).toFixed(2)}%`;
 }

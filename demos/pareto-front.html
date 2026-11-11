@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Evolve a greener recipe – Yawar Mahmood</title>
+<title>Can concrete be both cheap and green? – Yawar Mahmood</title>
 <meta name="description" content="A small genetic algorithm searches for concrete recipes that are both cheap and low in CO₂. You can't have both, so it finds the trade-off curve.">
 <script>(()=>{let t=null;try{t=localStorage.getItem('theme')}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});if(window.fitMath)fitMath()"></script>
 </head>
 <body>
 <header class="wrap bar">
@@ -22,44 +22,41 @@
 <main class="narrow">
   <div class="article-head">
     <p class="kicker">note</p>
-    <h1>Evolve a greener recipe</h1>
+    <h1>Can concrete be both cheap and green?</h1>
     <p class="lede">A small genetic algorithm searches for concrete recipes that are both cheap and low in CO₂. You can't have both, so it finds the trade-off curve.</p>
   </div>
   <article>
     
-<p>The concrete project didn't have one "best" recipe. Cheaper mixes with more cement emit more CO₂; replacing cement with other binders cuts CO₂ but costs more. And every recipe still has to satisfy the regulations. That's a <b>multi-objective</b> problem, and I solved it with NSGA-II on top of <a href="regression-tree.html">regression tree</a> models of how a recipe behaves.</p>
+<p>In the concrete project there was not one best recipe. Cheaper mixes with more cement emit more CO₂, while replacing cement with other binders lowers the CO₂ but costs more, and every recipe still has to satisfy the regulations. This is a multi-objective problem, which I solved with NSGA-II on top of <a href="regression-tree.html">regression tree</a> models of how a recipe behaves.</p>
 <h2>Several objectives</h2>
-<p>We want to minimise several objectives at once, here cost and CO₂, \(\mathbf F(\mathbf x) = \big(f_1(\mathbf x), f_2(\mathbf x)\big)\), subject to constraints \(g(\mathbf x) \le 0\). Recipe \(\mathbf a\) <b>dominates</b> \(\mathbf b\) if it's at least as good on every objective and strictly better on at least one:</p>
-$$\mathbf a \prec \mathbf b \iff f_m(\mathbf a) \le f_m(\mathbf b)\;\;\forall m \;\;\text{and}\;\; f_m(\mathbf a) \lt f_m(\mathbf b)\;\;\text{for some } m.$$
-<p>The recipes nobody dominates form the <b>Pareto front</b>. Each point on it is a different, defensible trade-off: you can't lower CO₂ without paying more. Choosing among them is a decision for people, not for the algorithm.</p>
-<div class="demo mini" id="mini-dominance"><p class="how"><b>Try:</b> move over the points. <b>Notice:</b> the orange box is everything the chosen recipe beats (more expensive <em>and</em> more CO₂). Points no box can reach form the Pareto front.</p><canvas id="c-dominance" aria-label="interactive illustration"></canvas><div class="controls"><span class="readout" id="dominance-out"></span></div></div>
+<p>We want to minimise several objectives at once, here cost and CO₂, \(\mathbf F(\mathbf x) = \big(f_1(\mathbf x), f_2(\mathbf x)\big)\), under constraints \(g(\mathbf x) \le 0\). A recipe \(\mathbf a\) dominates \(\mathbf b\) if it is at least as good in every objective, and strictly better in at least one:</p>
+$$\begin{aligned}\mathbf a \prec \mathbf b \iff {} & f_m(\mathbf a) \le f_m(\mathbf b)\;\;\forall m \\ & \text{and}\;\; f_m(\mathbf a) \lt f_m(\mathbf b)\;\;\text{for some } m.\end{aligned}$$
+<p>The recipes that are not dominated by any other recipe form the Pareto front. Each point on the front is a different trade-off, where the CO₂ cannot be lowered without a higher cost, and choosing between them is a decision for people and not for the algorithm.</p>
+<div class="demo mini" id="mini-dominance"><p class="how">When you move over the points, the orange area contains the recipes that the chosen one beats, since they are both more expensive and have more CO₂. Points that no other point beats form the Pareto front.</p><canvas id="c-dominance" aria-label="interactive illustration"></canvas><div class="controls"><span class="readout" id="dominance-out"></span></div></div>
 <h2>NSGA-II</h2>
+<p>NSGA-II is based on three ideas:</p>
 <ol>
-<li><b>Non-dominated sorting.</b> Rank the population into fronts: front 1 is the non-dominated set, front 2 is what's non-dominated once front 1 is removed, and so on.</li>
-<li><b>Crowding distance.</b> Within a front, prefer points in empty regions, so the front stays spread out instead of piling up in one spot. For point \(i\) in a front sorted by each objective \(m\):
+<li>The population is sorted into fronts by non-dominated sorting, where front 1 is the non-dominated set, front 2 is the non-dominated set after front 1 is removed, and so on.</li>
+<li>Within a front, points in less crowded regions are preferred, measured by the crowding distance, so the front stays spread out. For point \(i\) in a front sorted by each objective \(m\):
 $$d_i = \sum_m \frac{f_m^{(i+1)} - f_m^{(i-1)}}{f_m^{\max} - f_m^{\min}},$$
-with the extreme points given \(d = \infty\) so they're always kept.</li>
-<li><b>Elitism.</b> Parents and children compete together. Fill the next generation front by front, and break ties in the last front by crowding distance.</li>
+and the extreme points get \(d = \infty\), so they are always kept.</li>
+<li>Parents and children compete together (elitism). The next generation is filled front by front, and ties in the last front are broken by crowding distance.</li>
 </ol>
-<p>Constraints are handled by <b>constraint domination</b>: a feasible recipe always beats an infeasible one, and between two infeasible ones, the smaller violation wins.</p>
+<p>Constraints are handled with constraint domination, which means that a feasible recipe always beats an infeasible one, and between two infeasible recipes the one with the smallest violation wins.</p>
 <h2>Try it yourself</h2>
-<p>This toy version evolves a population of recipes (cement amount and replacement share). The <b style="color:var(--tomato)">orange points</b> are the Pareto front. Raise the strength requirement and watch the front move. <span class="muted">The coefficients are made up; the trade-off isn't.</span></p>
+<p>This simplified version evolves a population of recipes, each with a cement amount and a replacement share. The orange points are the Pareto front. If you raise the strength requirement, the front moves. <span class="muted">The coefficients are made up, but the trade-off is the same.</span></p>
 
-    <div class="demo"><p class="how"><b>Try:</b> press run, then drag the strength requirement up. <b>Notice:</b> the orange points spread out along a curve: you can't get cheaper without more CO₂. Stricter rules push the whole front up and to the right.</p><canvas id="cv" aria-label="Evolve a greener recipe interactive demo"></canvas>
+    <div class="demo"><p class="how">Press run and then increase the strength requirement. The orange points form a curve where a cheaper recipe always means more CO₂, and a stricter requirement moves the whole curve up and to the right.</p><canvas id="cv" aria-label="Can concrete be both cheap and green? interactive demo"></canvas>
       <div class="controls"><button id="run" class="btn primary">run</button><button id="reset" class="btn">reset</button>
 <label>min. strength <input type="range" id="smin" min="20" max="45" value="30"><b id="sminv">30 MPa</b></label>
 <span class="readout" id="gen"></span></div>
     </div>
     
-<h2>The real version</h2>
-<ul>
-<li><b>The objectives came from models.</b> Instead of formulas, regression trees fitted to data predicted each recipe's properties, which made every evaluation fast and explainable.</li>
-<li><b>The constraints came from the rules.</b> Regulatory requirements defined which recipes were allowed at all, and constraint domination kept the search inside them.</li>
-<li><b>The output was a menu, not an answer.</b> The value of the Pareto front is that it turns "what's the best recipe?" into "how much are you willing to pay per kilo of CO₂ saved?"</li>
-</ul>
+<h2>In the actual project</h2>
+<p>In the project, the objectives came from regression trees fitted to data, which made each evaluation fast and possible to explain. The regulations decided which recipes were allowed at all, and constraint domination kept the search inside them. The result was a set of possible recipes, which turns the question of which recipe is best into a question of how much one is willing to pay for each kilo of CO₂ saved.</p>
 
   </article>
-  <div class="next"><a href="regression-tree.html">← Grow a regression tree</a><a href="../index.html#notes">all notes →</a></div>
+  <div class="next"><a href="regression-tree.html">← How does a regression tree split the data?</a><a href="../index.html#notes">all notes →</a></div>
 </main>
 <footer class="wrap"><span>© 2026 Yawar Mahmood</span></footer>
 <script>

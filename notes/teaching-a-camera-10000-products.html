@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Teaching a camera 10,000 products – Yawar Mahmood</title>
-<meta name="description" content="A self-checkout system that recognises products from camera images, now live in ten grocery stores. Recognition is a similarity search, not a fixed list of classes.">
+<title>How does a checkout recognise 10,000 products? – Yawar Mahmood</title>
+<meta name="description" content="A self-checkout system that recognises products from camera images, now running in ten grocery stores. The products are recognised with a similarity search over a database of embeddings.">
 <script>(()=>{let t=null;try{t=localStorage.getItem('theme')}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});if(window.fitMath)fitMath()"></script>
 </head>
 <body>
 <header class="wrap bar">
@@ -22,58 +22,54 @@
 <main class="narrow">
   <div class="article-head">
     <p class="kicker">note</p>
-    <h1>Teaching a camera 10,000 products</h1>
-    <p class="lede">A self-checkout system that recognises products from camera images, now live in ten grocery stores. Recognition is a similarity search, not a fixed list of classes.</p>
+    <h1>How does a checkout recognise 10,000 products?</h1>
+    <p class="lede">A self-checkout system that recognises products from camera images, now running in ten grocery stores. The products are recognised with a similarity search over a database of embeddings.</p>
     <p class="meta">2025–26 · 6 min read</p>
   </div>
   <article>
-<p>From 2025 to 2026 I worked on a self-checkout system for NorgesGruppen. Cameras watch the checkout area, and the system has to recognise every product a customer handles. It's now live in <b>10 stores</b>, running on NVIDIA Jetson computers inside the stores themselves.</p>
-<p>There's a lot going on in that system. It's built on NVIDIA DeepStream, objects are tracked from frame to frame with Kalman filter-based trackers that I tuned for store conditions, and it watches for items that never pass the scanner. This note is about the recognition part.</p>
+<p>From 2025 to 2026 I worked on a self-checkout system for NorgesGruppen. Cameras look at the checkout area, and the system has to recognise the products a customer handles. The system is now running in 10 stores, on NVIDIA Jetson computers placed in the stores.</p>
+<p>The system is built on NVIDIA DeepStream. Objects are tracked from frame to frame with Kalman filter based trackers, which I tuned for the conditions in the stores, and the system also looks for items that do not pass the scanner. In this note I will mostly write about how the products are recognised.</p>
 
-<h2>Why not a classifier?</h2>
-<p>The obvious approach is a classifier: one output per product, trained on labelled images. With more than 10,000 products that gets painful fast. New products arrive all the time, packaging changes, seasonal items come and go, and every change means retraining the last layer and shipping a new model to every store.</p>
-<p>So instead of a fixed list of classes, the model maps every image to an <b>embedding</b>, a vector \(\mathbf z = g(\text{image}) \in \mathbb R^D\), and the aim is for images of the same product to end up close together. Recognition then becomes a search problem. With normalised embeddings, closeness is cosine similarity,</p>
+<h2>Classifier or similarity search</h2>
+<p>The first idea would be a classifier with one output for each product, trained on labelled images. With more than 10,000 products this becomes hard to maintain. New products come in all the time and packaging changes, and every change would mean retraining the last layer and sending a new model out to every store.</p>
+<p>So we map each image to an embedding, a vector \(\mathbf z = g(\text{image}) \in \mathbb R^D\), and the goal is that images of the same product end up close to each other. Recognising a product then becomes a search problem. With normalised embeddings, we measure closeness with cosine similarity,</p>
 $$\operatorname{sim}(\mathbf z, \mathbf z_j) = \frac{\mathbf z^\top \mathbf z_j}{\lVert\mathbf z\rVert\,\lVert\mathbf z_j\rVert},$$
-<p>and a <b>FAISS</b> vector index finds the most similar known products among 10,000+ items quickly. Adding a new product means adding its embeddings to the index. Nothing has to be retrained.</p>
-<div class="demo mini" id="mini-cosine"><p class="how"><b>Try:</b> drag the two arrow tips. <b>Notice:</b> the similarity only cares about the angle between them, not their length. Pointing the same way gives 1, at right angles 0, opposite −1.</p><canvas id="c-cosine" aria-label="interactive illustration"></canvas><div class="controls"><span class="readout" id="cosine-out"></span></div></div>
+<p>and a FAISS vector index finds the most similar known products among the 10,000+ items. To add a new product, we add its embeddings to the index, and nothing has to be retrained.</p>
+<div class="demo mini" id="mini-cosine"><p class="how">Drag the two arrow tips. The similarity only depends on the angle between the vectors and not on their length. It is 1 when they point the same way, 0 at a right angle and −1 when they point in opposite directions.</p><canvas id="c-cosine" aria-label="interactive illustration"></canvas><div class="controls"><span class="readout" id="cosine-out"></span></div></div>
 
 <h3>Voting, and unknown products</h3>
-<p>Given the \(k\) nearest neighbours \(\mathcal N_k(\mathbf z)\), the simplest decision rule is a vote:</p>
+<p>Given the \(k\) nearest neighbours \(\mathcal N_k(\mathbf z)\), a simple rule is to let them vote:</p>
 $$\hat y = \arg\max_c \sum_{j \in \mathcal N_k(\mathbf z)} \mathbf 1[y_j = c].$$
-<p>But a vote always picks <em>something</em>. In a store, a confident wrong answer at the checkout is worse than asking for help, so the system also needs an "unknown" option, for example when even the nearest neighbour is too far away. This is the open-set problem, and it's the reason the demo at the bottom of this page has a threshold slider.</p>
+<p>A vote will always pick one of the known products, even when the item is something the system has never seen. In a store, a wrong answer at the checkout is worse than asking for help, so the system also needs to be able to answer that the product is unknown, for example when even the nearest neighbour is far away. This is often called the open-set problem, and it is why the demo at the bottom of this page has a threshold.</p>
 
 <h2>DINOv3</h2>
-<p>The embeddings come from <b>DINOv3</b>, Meta's self-supervised vision transformer. It was trained on an enormous number of images without any labels, by learning to give consistent representations to different views of the same image. The result is a model that already has a very good general sense of shape, texture and colour.</p>
-<p>But "very good in general" isn't the same as "can tell two almost identical yogurts apart under shop lighting". It needed to specialise.</p>
+<p>The embeddings come from DINOv3, which is a self-supervised vision transformer from Meta. It was trained on a very large number of images without labels, by learning to give similar representations to different views of the same image. The model therefore already has a good general sense of shape, texture and colour.</p>
+<p>Being good in general is not the same as telling two almost identical yogurts apart under the lighting in a store, so the model had to be adapted to our data.</p>
 
 <h2>Fine-tuning with LoRA</h2>
-<p>Fine-tuning every weight in a large model is expensive, needs a lot of data, and risks making it forget what it already knew. <b>Low-rank adaptation</b> (LoRA) freezes the original weight matrix \(W_0 \in \mathbb R^{d\times k}\) and learns a low-rank update next to it:</p>
-$$W = W_0 + \Delta W = W_0 + \frac{\alpha}{r}\,BA, \qquad B \in \mathbb R^{d\times r},\; A \in \mathbb R^{r\times k},\; r \ll \min(d,k).$$
-<p>\(B\) starts at zero, so training begins exactly at the pre-trained model and moves away from it only as far as the data asks. The savings are large. For one \(1024 \times 1024\) projection, a typical size in a large vision transformer:</p>
-$$\underbrace{1024^2 \approx 1.05\text{M}}_{\text{full fine-tuning}} \quad\text{vs.}\quad \underbrace{2 \cdot 8 \cdot 1024 \approx 16\text{k}}_{\text{LoRA, } r=8} \;\approx 1.6\%.$$
-<div class="demo mini" id="mini-lora"><p class="how"><b>Try:</b> drag the rank r. <b>Notice:</b> even at r = 64, LoRA trains a small fraction of what full fine-tuning would for one 1024 × 1024 layer.</p><canvas id="c-lora" aria-label="interactive illustration"></canvas><div class="controls"><label>rank r <input type="range" id="lora-r" min="1" max="128" value="8"><b id="lora-rv"></b></label><span class="readout" id="lora-out"></span></div></div>
-<p>In other words, you train a small correction to the model instead of rewriting it. Training is faster, it needs far less memory and data, and the general knowledge in the original model stays intact.</p>
+<p>Fine-tuning all the weights in a large model is expensive, needs a lot of data, and the model may forget some of what it already knew. Low-rank adaptation (LoRA) keeps the original weight matrix \(W_0 \in \mathbb R^{d\times k}\) frozen, and learns a low-rank update next to it:</p>
+$$\begin{gathered}W = W_0 + \Delta W = W_0 + \frac{\alpha}{r}\,BA, \\ B \in \mathbb R^{d\times r},\; A \in \mathbb R^{r\times k},\; r \ll \min(d,k).\end{gathered}$$
+<p>\(B\) is initialised to zero, so training starts at the pre-trained model and only moves away from it as far as the data requires. The number of trained parameters is much smaller. For a single \(1024 \times 1024\) projection, which is a typical size in a large vision transformer, we get</p>
+$$\begin{gathered}\underbrace{1024^2 \approx 1.05\text{M}}_{\text{full fine-tuning}}  \\ \text{vs.} \\  \underbrace{2 \cdot 8 \cdot 1024 \approx 16\text{k}}_{\text{LoRA, } r=8} \;\approx 1.6\%.\end{gathered}$$
+<div class="demo mini" id="mini-lora"><p class="how">Change the rank r. Even with r = 64, LoRA trains only a small part of the parameters that full fine-tuning would train for a 1024 × 1024 layer.</p><canvas id="c-lora" aria-label="interactive illustration"></canvas><div class="controls"><label>rank r <input type="range" id="lora-r" min="1" max="128" value="8"><b id="lora-rv"></b></label><span class="readout" id="lora-out"></span></div></div>
+<p>This makes training faster and needs less memory and data, and most of the general knowledge in the original model is kept.</p>
 
 <h2>Rare products and store lighting</h2>
-<p>Stores are messy. Some products are bought so rarely that there are hardly any images of them, and checkout lighting is nothing like a photo studio. So the training data was <b>augmented</b>: flipped, stretched, geometrically distorted and varied, so that the model saw rare products and difficult lighting far more often than reality would offer. That improved classification accuracy.</p>
+<p>Some products are bought so rarely that there are very few images of them, and the light at a checkout is very different from a photo studio. We therefore augmented the training data with flips, stretching and other geometric distortions, so that the model saw the rare products and the difficult lighting more often than it would otherwise. This improved the classification accuracy.</p>
 
-<h2>What I learned</h2>
-<ul>
-<li><b>The problem formulation mattered most.</b> Treating recognition as retrieval is what made 10,000+ products and a changing catalogue manageable.</li>
-<li><b>A foundation model with a small adapter</b> is a good default when there's little data per class.</li>
-<li><b>The long tail was mostly a data problem.</b> The rare products needed more varied training data more than a different model.</li>
-<li><b>Running on the edge is a constraint from the start.</b> When the model lives on a small box in a store, latency and memory shape every other decision.</li>
-</ul>
+<h2>Some things I learned</h2>
+<p>Looking back, the most important decision was to treat recognition as a search problem. This is what made it possible to handle 10,000+ products and a catalogue that keeps changing. A foundation model with a small adapter also seems like a good default when there are few images per product.</p>
+<p>The rare products were mostly a data problem, and they needed more varied training data more than a different model. Running on a small computer in the store also affects most of the other choices, since latency and memory are limited from the start.</p>
 
 <h2>Try it yourself</h2>
-<p>Real embeddings have hundreds of dimensions. This toy one has two, so you can see it. Move your pointer (or finger) to place the mystery item. The three nearest products vote. If even the closest one is outside the dashed circle, the honest answer is "unknown".</p>
+<p>Real embeddings have hundreds of dimensions, but this one has two so that we can draw it. Move your pointer to place the unknown item. The three nearest products vote, and if even the closest one is outside the dashed circle, the item is marked as unknown.</p>
 
-<div class="demo"><p class="how"><b>Try:</b> move your pointer around, then drag the threshold down. <b>Notice:</b> the three nearest products vote. Between groups, or far from everything, the honest answer becomes "unknown".</p><canvas id="cv" aria-label="How a checkout recognises an apple interactive demo"></canvas><div class="controls"><label>"unknown" threshold <input type="range" id="thr" min="20" max="140" value="70"><b id="thrv">70</b></label>
+<div class="demo"><p class="how">Move the pointer around and lower the threshold. The three nearest products vote, and between the groups or far away from all of them, the item is marked as unknown.</p><canvas id="cv" aria-label="How a checkout recognises an apple interactive demo"></canvas><div class="controls"><label>"unknown" threshold <input type="range" id="thr" min="20" max="140" value="70"><b id="thrv">70</b></label>
 <span class="readout" id="guess"></span></div></div>
-<p class="note-small">The "unknown" option matters more than it looks. In a real store, new products show up all the time, and a confident wrong answer at the checkout is worse than asking for help.</p>
+<p class="note-small">In a store, new products come in all the time, and a wrong answer at the checkout is worse than asking for help, so the option to answer unknown is important.</p>
 <!--DEMO-->
 </article>
-  <div class="next"><a href="an-agent-for-door-paperwork.html">← An agent that reads door paperwork</a><a href="cells-redwoods-and-pines.html">Cells, redwoods and pine trees →</a></div>
+  <div class="next"><a href="an-agent-for-door-paperwork.html">← Can an AI agent read door paperwork?</a><a href="cells-redwoods-and-pines.html">Clustered, random or evenly spread? →</a></div>
 </main>
 <footer class="wrap"><span>© 2026 Yawar Mahmood</span></footer>
 <script src="../theme.js"></script>
@@ -133,7 +129,7 @@ function draw() {
   ctx.strokeStyle = css('--line'); ctx.beginPath(); ctx.arc(cx, cy, s, 0, 7); ctx.stroke();
   const arrow = (v, col, lab) => { const x = cx + v[0] * s, y = cy - v[1] * s; ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 8, 0, 7); ctx.fill();
-    ctx.font = '13px IBM Plex Mono, monospace'; ctx.fillText(lab, x + 12, y); };
+    ctx.font = '13px IBM Plex Mono, monospace'; const tw = ctx.measureText(lab).width; ctx.fillText(lab, Math.min(x + 12, w - tw - 4), y - (x + 12 + tw > w - 4 ? 14 : 0)); };
   const a1 = Math.atan2(A[1], A[0]), a2 = Math.atan2(Bv[1], Bv[0]);
   ctx.strokeStyle = css('--mustard'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, 34, -Math.max(a1, a2), -Math.min(a1, a2)); ctx.stroke();
   arrow(A, css('--tomato'), 'photo'); arrow(Bv, css('--teal'), 'product');
@@ -156,8 +152,9 @@ if (c) new MutationObserver(() => dispatchEvent(new Event('resize'))).observe(do
 const d = 1024;
 function draw() {
   const r = +$('r').value, full = d * d, lora = 2 * r * d; $('rv').textContent = r;
-  const { ctx, w, h } = fitCanvas(c, 200); ctx.clearRect(0, 0, w, h);
-  const S = Math.min(140, h - 40), x0 = 20, y0 = 30;
+  const narrow = c.clientWidth < 520;
+  const { ctx, w, h } = fitCanvas(c, narrow ? 270 : 200); ctx.clearRect(0, 0, w, h);
+  const S = narrow ? Math.min(120, (w - 110) / 2) : Math.min(140, h - 40), x0 = 20, y0 = 30;
   ctx.fillStyle = css('--soft'); ctx.globalAlpha = 0.25; ctx.fillRect(x0, y0, S, S); ctx.globalAlpha = 1;
   ctx.fillStyle = css('--ink'); ctx.font = '12px IBM Plex Mono, monospace'; ctx.fillText('W₀ (frozen)', x0, y0 - 8);
   ctx.fillText('+', x0 + S + 14, y0 + S / 2);
@@ -165,7 +162,7 @@ function draw() {
   ctx.fillStyle = css('--tomato'); ctx.fillRect(bx, y0, bw, S); ctx.fillStyle = css('--ink'); ctx.fillText('B', bx, y0 - 8);
   ctx.fillText('·', bx + bw + 8, y0 + S / 2);
   const ax = bx + bw + 22; ctx.fillStyle = css('--teal'); ctx.fillRect(ax, y0, S, bw); ctx.fillStyle = css('--ink'); ctx.fillText('A', ax, y0 - 8);
-  const gx = ax + S + 30, gw = Math.max(60, w - gx - 20), gy = y0 + 20;
+  const gx = narrow ? 20 : ax + S + 30, gw = narrow ? w - 40 : Math.max(60, w - gx - 20), gy = narrow ? y0 + S + 44 : y0 + 20;
   ctx.fillStyle = css('--line'); ctx.fillRect(gx, gy, gw, 16); ctx.fillStyle = css('--tomato'); ctx.fillRect(gx, gy, Math.max(2, gw * lora / full), 16);
   ctx.fillStyle = css('--soft'); ctx.fillText('trained parameters', gx, gy - 6);
   ctx.fillText('full: ' + (full / 1e6).toFixed(2) + 'M', gx, gy + 36); ctx.fillStyle = css('--tomato'); ctx.fillText('LoRA: ' + (lora / 1e3).toFixed(0) + 'k', gx, gy + 54);

@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>When does a ship capsize? – Yawar Mahmood</title>
-<meta name="description" content="A half-round hull, some cargo that wants to slide, waves pushing on the side. Three ODE solvers, and one of them gave up.">
+<meta name="description" content="A ship with a half-circle hull, loose cargo and waves, modelled with ODEs and solved with three different numerical methods.">
 <script>(()=>{let t=null;try{t=localStorage.getItem('theme')}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});if(window.fitMath)fitMath()"></script>
 </head>
 <body>
 <header class="wrap bar">
@@ -23,70 +23,68 @@
   <div class="article-head">
     <p class="kicker">note</p>
     <h1>When does a ship capsize?</h1>
-    <p class="lede">A half-round hull, some cargo that wants to slide, waves pushing on the side. Three ODE solvers, and one of them gave up.</p>
+    <p class="lede">A ship with a half-circle hull, loose cargo and waves, modelled with ODEs and solved with three different numerical methods.</p>
     <p class="meta">2022 · 5 min read</p>
   </div>
   <article>
-<p>Take a ship with a half-circle hull, put it in water, give it a push and ask: <b>does it come back up, or does it capsize?</b> Then make the model harder, one force at a time, and see what each numerical method makes of it.</p>
+<p>In this project we looked at a ship with a half-circle hull, which gets a push while it floats in water. The question is whether it comes back up or capsizes. We started with a simple model and added one force at a time, and compared how different numerical methods handled the equations.</p>
 
 <figure><div class="frame"><img src="../img/ship-sketch.png" alt="Hand-drawn sketch of the half-round hull with metacentre M, centre of mass C, centre of buoyancy B and deepest point D." loading="lazy"></div>
-<figcaption>Where it started: a hand-drawn sketch of the hull, with the metacentre M, centre of mass C, centre of buoyancy B and deepest point D.</figcaption></figure>
+<figcaption>A hand-drawn sketch of the hull, with the metacentre M, the centre of mass C, the centre of buoyancy B and the deepest point D.</figcaption></figure>
 
-<h2>How deep does it sit?</h2>
-<p>The ship is a 2D half-disc with radius \(R = 10\) m and area density \(\sigma = 500\) kg/m², floating in water with \(\sigma_0 = 1000\) kg/m². Archimedes says the submerged area must balance the weight, \(A_0 = \frac{\sigma \pi R^2}{2\sigma_0}\). Geometry says a circular segment with central angle \(\beta\) has area \(\tfrac12R^2(\beta - \sin\beta)\). Setting them equal:</p>
+<h2>Floating depth</h2>
+<p>The ship is a half disc in 2D with radius \(R = 10\) m and density \(\sigma = 500\) kg/m², and the water has density \(\sigma_0 = 1000\) kg/m². From Archimedes' law, the submerged area is \(A_0 = \frac{\sigma \pi R^2}{2\sigma_0}\). From the geometry, a circular segment with central angle \(\beta\) has area \(\tfrac12R^2(\beta - \sin\beta)\). Setting these equal gives</p>
 $$\beta - \sin\beta = \pi\,\frac{\sigma}{\sigma_0}.$$
-<p>There's no closed form, so we solved it with Newton's method: \(\beta = 2.3099\) rad, about 132°. Everything else (the waterline, the depth of the centre of buoyancy) follows from \(\beta\).</p>
-<div class="demo mini" id="mini-beta"><p class="how"><b>Try:</b> make the ship lighter or heavier. <b>Notice:</b> Newton's method finds β in a handful of steps, and the waterline moves with it. At half the density of water (the project's ship), β ≈ 2.31 rad.</p><canvas id="c-beta" aria-label="interactive illustration"></canvas><div class="controls"><label>ship density / water <input type="range" id="beta-s" min="5" max="95" value="50"><b id="beta-sv"></b></label><span class="readout" id="beta-out"></span></div></div>
+<p>This equation does not have an explicit solution, so we solved it with Newton's method and got \(\beta = 2.3099\) rad, which is about 132°. The waterline and the depth of the centre of buoyancy follow from \(\beta\).</p>
+<div class="demo mini" id="mini-beta"><p class="how">Change the density of the ship. Newton's method finds β in a few steps, and the waterline moves with it. At half the density of water, which is the ship in the project, β ≈ 2.31 rad.</p><canvas id="c-beta" aria-label="interactive illustration"></canvas><div class="controls"><label>ship density / water <input type="range" id="beta-s" min="5" max="95" value="50"><b id="beta-sv"></b></label><span class="readout" id="beta-out"></span></div></div>
 
 <h2>Rocking</h2>
-<p>With only gravity and buoyancy, the buoyant force \(F_B\) acts through the metacentre, a distance \(h = \frac{4R}{3\pi}\) above the centre of mass. Newton's second law for rotation gives</p>
-$$I_C\,\frac{d^2\theta}{dt^2} = -F_B\,h\,\sin\theta, \qquad I_C = \tfrac12 m R^2\left(1 - \frac{32}{9\pi^2}\right).$$
-<p>It's the pendulum equation. For small angles, \(\sin\theta \approx \theta\) gives a harmonic oscillator with an exact solution, which we used as a reference. We compared the two at starting angles of 1° and 20°. The approximation is excellent for small angles; for larger ones the true pendulum swings a little slower, so the two solutions drift apart over time.</p>
-<div class="demo mini" id="mini-smallangle"><p class="how"><b>Try:</b> increase the starting tilt. <b>Notice:</b> at a few degrees, sin θ ≈ θ is spot on. At large tilts the real ship (orange) swings slower, and the approximation (dashed) drifts ahead.</p><canvas id="c-smallangle" aria-label="interactive illustration"></canvas><div class="controls"><label>starting tilt <input type="range" id="smallangle-a" min="1" max="85" value="20"><b id="smallangle-av"></b></label></div></div>
+<p>If we only include gravity and buoyancy, the buoyancy force \(F_B\) acts through the metacentre, which is a distance \(h = \frac{4R}{3\pi}\) above the centre of mass. Newton's second law for rotation gives</p>
+$$\begin{gathered}I_C\,\frac{d^2\theta}{dt^2} = -F_B\,h\,\sin\theta, \\ I_C = \tfrac12 m R^2\left(1 - \frac{32}{9\pi^2}\right).\end{gathered}$$
+<p>This is the same equation as for a pendulum. For small angles we can use \(\sin\theta \approx \theta\), which gives a harmonic oscillator with an exact solution that we used as a reference. We compared the two for starting angles of 1° and 20°. The approximation is very good for small angles, but for larger angles the ship swings slightly slower than the approximation, so the two solutions drift apart over time.</p>
+<div class="demo mini" id="mini-smallangle"><p class="how">If you increase the starting tilt, you can see that for a few degrees sin θ ≈ θ is very accurate. For large tilts the ship (orange) swings slower, and the approximation (dashed) gets ahead of it.</p><canvas id="c-smallangle" aria-label="interactive illustration"></canvas><div class="controls"><label>starting tilt <input type="range" id="smallangle-a" min="1" max="85" value="20"><b id="smallangle-av"></b></label></div></div>
 
 <h2>Building the model up</h2>
-<p>From there we let the ship move freely, so the state became an 8-dimensional vector:</p>
+<p>Next we let the ship move freely, so the state became a vector with 8 elements:</p>
 $$\mathbf w = [\theta,\; \omega,\; y_C,\; v_y,\; x_C,\; v_x,\; s_L,\; v_L],$$
-<p>with the angle and angular velocity, the centre of mass in two directions, and the cargo's position and velocity along the deck. The forces were added one at a time:</p>
+<p>which are the angle and angular velocity, the position and velocity of the centre of mass in two directions, and the position and velocity of the cargo along the deck. We added the forces one at a time:</p>
 <ol>
-<li><b>Buoyancy that changes with depth.</b> As the ship bobs, the submerged area and therefore \(F_B\) change.</li>
-<li><b>Capsizing.</b> The ship has capsized when any part of the deck goes under water, which happens when \(R\lvert\sin\theta\rvert\) exceeds the height of the metacentre above the waterline. Starting upright, the smallest angular velocity that tips it over is <b>about 24.7° per second</b>.</li>
-<li><b>Loose cargo.</b> A point mass \(m_L\) on the deck that slides with the tilt, \(\dot v_L = -g\sin\theta\), and pushes back on the ship through a torque \(-m_L g\cos\theta\,s_L\). Without railings it can fall off; with railings it stays on board.</li>
-<li><b>Friction with the water</b>, acting at the bottom of the hull and proportional to the angular velocity, with coefficient \(k_f\).</li>
-<li><b>Wind and waves</b> as a periodic force \(F_0\cos(\omega_w t)\).</li>
-<li><b>Friction between cargo and deck</b>, with coefficient \(\mu\).</li>
+<li>The buoyancy depends on the depth, so when the ship moves up and down, the submerged area and \(F_B\) change.</li>
+<li>We say that the ship has capsized when a part of the deck is under water, which happens when \(R\lvert\sin\theta\rvert\) is larger than the height of the metacentre above the waterline. Starting from upright, the smallest angular velocity that makes the ship capsize is about 24.7° per second.</li>
+<li>Loose cargo is modelled as a point mass \(m_L\) on the deck, which slides with the tilt, \(\dot v_L = -g\sin\theta\), and gives a torque \(-m_L g\cos\theta\,s_L\) on the ship. Without railings the cargo can fall off, and with railings it stays on board.</li>
+<li>Friction from the water acts at the bottom of the hull and is proportional to the angular velocity, with coefficient \(k_f\).</li>
+<li>Wind and waves are modelled as a periodic force \(F_0\cos(\omega_w t)\).</li>
+<li>Friction between the cargo and the deck has coefficient \(\mu\).</li>
 </ol>
-<p>The full rotational equation ended up as</p>
-$$\frac{d\omega}{dt} = \frac{-F_B h\sin\theta \;-\; m_L g\cos\theta\, s_L \;-\; k_f R\gamma\,\omega\,\big(y_C + R(1 - \cos\tfrac{\gamma}{2})\big) \;+\; F_0\cos(\omega_w t)\,y_C}{I_C}.$$
+<p>The full equation for the rotation then becomes</p>
+$$\begin{aligned} I_C\,\frac{d\omega}{dt} = {} & -F_B h\sin\theta - m_L g\cos\theta\, s_L \\ & - k_f R\gamma\,\omega\,\big(y_C + R(1 - \cos\tfrac{\gamma}{2})\big) \\ & + F_0\cos(\omega_w t)\,y_C.\end{aligned}$$
 
 <h2>Friction</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-<figure style="margin:0"><div class="frame"><img src="../img/ship-kf20000.png" alt="Angle over time with strong friction: dies out in a few seconds." loading="lazy"></div><figcaption>\(k_f = 20\,000\): settles in seconds.</figcaption></figure>
-<figure style="margin:0"><div class="frame"><img src="../img/ship-kf1000.png" alt="Angle over time with weak friction: keeps oscillating." loading="lazy"></div><figcaption>\(k_f = 1000\): keeps rocking.</figcaption></figure>
+<figure style="margin:0"><div class="frame"><img src="../img/ship-kf20000.png" alt="Angle over time with strong friction: dies out in a few seconds." loading="lazy"></div><figcaption>\(k_f = 20\,000\). The ship settles in a few seconds.</figcaption></figure>
+<figure style="margin:0"><div class="frame"><img src="../img/ship-kf1000.png" alt="Angle over time with weak friction: keeps oscillating." loading="lazy"></div><figcaption>\(k_f = 1000\). The ship keeps rocking.</figcaption></figure>
 </div>
 
 <h2>Three solvers</h2>
-<p>All of this is an ODE system \(\dot{\mathbf w} = \mathbf f(t, \mathbf w)\), which we solved three ways.</p>
-<p><b>Euler's method</b> takes one slope and steps along it:</p>
+<p>All of this is a system of ODEs, \(\dot{\mathbf w} = \mathbf f(t, \mathbf w)\), which we solved with three methods. Euler's method takes one step along the current slope:</p>
 $$\mathbf w_{n+1} = \mathbf w_n + \Delta t\,\mathbf f(t_n, \mathbf w_n).$$
-<p><b>Runge–Kutta 4</b> samples four slopes per step and combines them:</p>
+<p>Runge–Kutta 4 evaluates four slopes in each step and combines them:</p>
 $$\mathbf w_{n+1} = \mathbf w_n + \frac{\Delta t}{6}\big(\mathbf k_1 + 2\mathbf k_2 + 2\mathbf k_3 + \mathbf k_4\big).$$
-<p><b>Bogacki–Shampine</b> is an adaptive 3(2) pair: two estimates of different order from the same slopes, whose difference estimates the local error and shrinks or grows the step size automatically.</p>
+<p>Bogacki–Shampine is an adaptive method of order 3(2). It computes two estimates of different order from the same slopes, and uses the difference between them to estimate the local error and adjust the step size.</p>
 <figure><div class="frame"><img src="../img/ship-convergence.png" alt="Log-log convergence plots: error against step size for Euler (order 1) and RK4 (order 4)." loading="lazy"></div>
-<figcaption>Error against step size. Euler's error falls linearly, RK4's with the fourth power.</figcaption></figure>
-<p>The convergence plot confirms the theory: global error \(\mathcal O(\Delta t)\) for Euler and \(\mathcal O(\Delta t^4)\) for RK4. Halving the step barely helps Euler, but makes RK4 sixteen times more accurate.</p>
+<figcaption>Error as a function of step size. The error of Euler's method decreases linearly, and the error of RK4 with the fourth power of the step size.</figcaption></figure>
+<p>The convergence plot agrees with the theory, with a global error of \(\mathcal O(\Delta t)\) for Euler and \(\mathcal O(\Delta t^4)\) for RK4. Halving the step size only halves the error for Euler, while for RK4 the error becomes sixteen times smaller.</p>
 
 <h2>When the adaptive solver stalled</h2>
-<p>With friction between the cargo and the deck, Bogacki–Shampine more or less froze for some values of \(\mu\). Our best guess: the cargo caused sharp spikes in the equations, the error estimate exploded, and the step size shrank towards zero. RK4 handled the same cases without complaint.</p>
-<p>To compare the two fairly we ran Bogacki–Shampine with a fixed step. The differences between them mostly came from how they handled the cargo: with lighter cargo or less friction they agreed much better.</p>
-<p>Running two solvers on the same problem doesn't tell you which one is right, but the places where they disagree are a good place to look for problems.</p>
+<p>With friction between the cargo and the deck, Bogacki–Shampine more or less stopped for some values of \(\mu\). We are not certain about the reason, but we suspect that the cargo causes large spikes in the equations, which makes the error estimate very large, so the step size shrinks until the method effectively stops. RK4 had no problems with the same equations.</p>
+<p>To compare the two methods, we used Bogacki–Shampine with a fixed step size. Most of the difference between them came from how they handled the cargo, and with lighter cargo or less friction they agreed much better. From these results we cannot say which of the methods is more accurate. The comparison still shows where each method has weaknesses.</p>
 
 <h2>Try it yourself</h2>
-<p>The core of it, live: the same frictionless ship simulated twice. In reality it should rock forever with the same amplitude. Euler slowly pumps energy in until it tips over; RK4 stays put. Make the step size bigger and watch Euler give up sooner.</p>
+<p>This is the same ship without friction, simulated twice. In reality it should keep rocking with the same amplitude forever. Euler's method slowly adds energy until the ship capsizes, while RK4 keeps the same amplitude. If you increase the step size, Euler's method capsizes sooner.</p>
 
-<div class="demo"><p class="how"><b>Try:</b> wait a few seconds, then drag the step size up. <b>Notice:</b> Euler's line under the ship grows a little every swing until it tips over; RK4 keeps the same swing forever.</p><canvas id="cv" aria-label="Which solver capsizes? interactive demo"></canvas><div class="controls"><label>step size <input type="range" id="dt" min="1" max="12" value="7"><b id="dtv">0.04 s</b></label>
+<div class="demo"><p class="how">Wait a few seconds and then increase the step size. The swing of the Euler ship grows a little every time until it capsizes, while the RK4 ship keeps the same swing.</p><canvas id="cv" aria-label="Which solver capsizes? interactive demo"></canvas><div class="controls"><label>step size <input type="range" id="dt" min="1" max="12" value="7"><b id="dtv">0.04 s</b></label>
 <button id="restart" class="btn">restart</button></div></div>
-<p class="note-small">Lines under each ship show the tilt angle over time. Euler's error per step is proportional to the step size, RK4's to the fourth power of it. That's why halving the step size barely rescues Euler but makes RK4 sixteen times more accurate.</p>
+<p class="note-small">The lines under the ships show the tilt angle over time. The error of Euler's method is proportional to the step size, and the error of RK4 to the fourth power of the step size, so halving the step size helps RK4 much more than Euler.</p>
 <!--DEMO-->
 <p class="closer">The notebook and the animation code are on <a href="https://github.com/yawarm/TMA4320-Introduction-to-Scientific-Computation">GitHub</a>.</p>
 </article>
@@ -135,7 +133,8 @@ function draw() {
     ship(ctx, cx, sea, R, sh.cap === null ? sh.s[0] : Math.sign(sh.s[0]) * 1.9);
     ctx.fillStyle = css('--ink'); ctx.font = '600 14px DM Sans, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(sh.name, cx, 28);
     ctx.font = '12px IBM Plex Mono, monospace'; ctx.fillStyle = sh.cap !== null ? css('--tomato') : css('--faint');
-    ctx.fillText(sh.cap !== null ? `capsized after ${sh.cap.toFixed(1)} s` : `t = ${sh.t.toFixed(1)} s`, cx, 48);
+    if (half < 200) ctx.font = '10px IBM Plex Mono, monospace';
+    ctx.fillText(sh.cap !== null ? (half < 200 ? `capsized ${sh.cap.toFixed(1)} s` : `capsized after ${sh.cap.toFixed(1)} s`) : `t = ${sh.t.toFixed(1)} s`, cx, 48);
     const gy = 300, gh = 56; ctx.strokeStyle = css('--line'); ctx.beginPath(); ctx.moveTo(half * i + 14, gy); ctx.lineTo(half * (i + 1) - 14, gy); ctx.stroke();
     ctx.strokeStyle = i ? css('--teal') : css('--tomato'); ctx.lineWidth = 2; ctx.beginPath();
     sh.hist.forEach((v, j) => { const x = half * i + 14 + j / 259 * (half - 28), y = gy - v / CAP * gh; j ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();

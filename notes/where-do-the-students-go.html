@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Where do the students go in summer? – Yawar Mahmood</title>
-<meta name="description" content="I spent a year with 1.7 million bus boardings on Trondheim's Line 3. The main seasonal driver wasn't the weather. It was the university calendar.">
+<meta name="description" content="A Bayesian model of 1.7 million bus boardings on Line 3 in Trondheim. Most of the seasonal variation comes from the university calendar, while the weather has little effect.">
 <script>(()=>{let t=null;try{t=localStorage.getItem('theme')}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});if(window.fitMath)fitMath()"></script>
 </head>
 <body>
 <header class="wrap bar">
@@ -23,110 +23,111 @@
   <div class="article-head">
     <p class="kicker">note</p>
     <h1>Where do the students go in summer?</h1>
-    <p class="lede">I spent a year with 1.7 million bus boardings on Trondheim's Line 3. The main seasonal driver wasn't the weather. It was the university calendar.</p>
+    <p class="lede">A Bayesian model of 1.7 million bus boardings on Line 3 in Trondheim. Most of the seasonal variation comes from the university calendar, while the weather has little effect.</p>
     <p class="meta">2026 · 6 min read</p>
   </div>
   <article>
-<p>I got a full year of data from the automatic passenger counters on Trondheim's bus Line 3: every time a bus stopped, how many people got on. After removing the 52,210 stop visits where the counter wasn't active, that left <b>1,743,956 stop visits</b> from 2025, along a route that runs from Hallset, through the city centre and the Gløshaugen campus, out to Dragvoll. Aggregated to boardings per stop and hour, that's about 323,000 stop-hours.</p>
-<p>The question was simple: what decides how many people get on the bus, where, and when? Most of the answer turned out to be the university calendar. Getting there took a fairly large Bayesian model, and the model didn't win every comparison.</p>
+<p>I worked with a full year of data from the automatic passenger counters on bus Line 3 in Trondheim. Every time a bus stops, the counter records how many people get on. After removing the 52,210 stop visits where the counter was not active, there were 1,743,956 stop visits left from 2025. The route goes from Hallset, through the city centre and the Gløshaugen campus, and out to Dragvoll. Aggregated to boardings per stop and hour, this gives about 323,000 stop-hours.</p>
+<p>The question I wanted to answer is what decides how many people get on the bus at a given stop and hour. Most of the seasonal variation turned out to come from the university calendar. The model I ended up with is a fairly large Bayesian model, and it did not beat every simple baseline, which I come back to at the end.</p>
 
 <figure><div class="frame"><img src="../img/route-map.jpg" alt="Map of bus Line 3 in Trondheim, coloured by land use: residential, university, student housing and city centre." loading="lazy"></div>
-<figcaption>Line 3, coloured by what's around each stop: residential areas, two university campuses, student housing and the city centre. 26 stops per direction.</figcaption></figure>
+<figcaption>Line 3, coloured by what is around each stop: residential areas, two university campuses, student housing and the city centre. There are 26 stops in each direction.</figcaption></figure>
 
 <h2>Choosing a likelihood</h2>
-<p>Boardings are non-negative integers, so ordinary regression is out. The textbook starting point is a Poisson model with a log link, where the variance equals the mean. Ridership doesn't behave like that; some hours are far busier than the average suggests. That's <b>overdispersion</b>, and the Negative Binomial handles it by adding a quadratic term:</p>
+<p>Boardings are counts, so a Gaussian model is not a good fit. The usual starting point for count data is a Poisson model with a log link, where the variance is equal to the mean. Looking at the data, we see that some hours are much busier than the mean would suggest, so the variance is larger than the mean. This is called overdispersion, and the Negative Binomial distribution handles it with an extra quadratic term in the variance:</p>
 $$\mathrm{Var}(Y_{it}) = \mu_{it} + \frac{\mu_{it}^2}{\theta}.$$
-<p>When \(\theta\) is small the counts are very spread out; as \(\theta \to \infty\) you're back at Poisson. On this data the model estimated \(\hat\theta = 4.52\) (95% CI \([4.46, 4.58]\)), so there is a lot of extra variance. Comparing the two likelihoods on the same model made the choice easy:</p>
+<p>A small \(\theta\) means a lot of extra spread, and as \(\theta \to \infty\) we get the Poisson distribution back. The estimate on this data was \(\hat\theta = 4.52\) with a 95% credible interval of \([4.46, 4.58]\), so there is a lot of overdispersion. I fitted the full model with both likelihoods and compared them:</p>
 <table>
 <tr><th>Likelihood</th><th>DIC</th><th>WAIC</th></tr>
 <tr><td>Poisson</td><td>1,051,667</td><td>1,642,753</td></tr>
-<tr><td>Negative Binomial</td><td><b>825,679</b></td><td><b>835,966</b></td></tr>
+<tr><td>Negative Binomial</td><td>825,679</td><td>835,966</td></tr>
 </table>
-<p>The Poisson model gave similar point predictions. The difference was in the uncertainty: Poisson assumed it was much more precise than it was, which gives intervals that are too narrow.</p>
-<div class="demo mini" id="mini-nb"><p class="how"><b>Try:</b> drag θ. <b>Notice:</b> both distributions have the same mean (20 boardings), but a small θ spreads the Negative Binomial far wider than Poisson allows.</p><canvas id="c-nb" aria-label="interactive illustration"></canvas><div class="controls"><label>θ <input type="range" id="nb-th" min="0" max="100" value="38"><b id="nb-thv"></b></label><span class="readout" id="nb-out"></span></div></div>
+<p>Both criteria prefer the Negative Binomial. The point predictions from the two models were quite similar. The difference is in the uncertainty, where the Poisson model is far too confident and gives intervals that are too narrow.</p>
+<div class="demo mini" id="mini-nb"><p class="how">If you change θ, you can see that both distributions have mean 20, but with a small θ the Negative Binomial is much wider than the Poisson distribution.</p><canvas id="c-nb" aria-label="interactive illustration"></canvas><div class="controls"><label>θ <input type="range" id="nb-th" min="0" max="100" value="38"><b id="nb-thv"></b></label><span class="readout" id="nb-out"></span></div></div>
 
 <h2>The model</h2>
-<p>The model is a <b>structured additive regression</b> (STAR) for stop \(i\) and date-hour \(t\), fitted to the Dragvoll → Hallset direction:</p>
-$$\begin{aligned}\log \mu_{it} = {} & \beta_O \log O_{it} + \beta_0 + \mathbf{c}_{it}^\top\boldsymbol\beta + \textstyle\sum_{k,l}\gamma_{kl}\,\mathbf 1[\text{regime}_t{=}k]\,\mathbf 1[\text{type}_i{=}l] \\ & + f_{\text{season}}(w_t) + f_{\text{day}}(d_t) + f^{d}_{\text{time}}(h_t) + f^{d}_{\text{space}}(i) + f_{\text{stop}}(i) + \delta_d(h_t, i).\end{aligned}$$
-<p>Piece by piece:</p>
+<p>The model is a structured additive regression (STAR) model for stop \(i\) and date-hour \(t\), fitted to the Dragvoll to Hallset direction:</p>
+$$\begin{aligned}\log \mu_{it} = {} & \beta_O \log O_{it} + \beta_0 + \mathbf{c}_{it}^\top\boldsymbol\beta \\ & + \textstyle\sum_{k,l}\gamma_{kl}\,\mathbf 1[\text{regime}_t{=}k]\,\mathbf 1[\text{type}_i{=}l] \\ & + f_{\text{season}}(w_t) + f_{\text{day}}(d_t) + f^{d}_{\text{time}}(h_t) \\ & + f^{d}_{\text{space}}(i) + f_{\text{stop}}(i) + \delta_d(h_t, i).\end{aligned}$$
+<p>The terms are:</p>
 <ul>
-<li>\(O_{it}\) is the number of buses at that stop in that hour. Instead of forcing a fixed offset ("double the buses, double the riders"), its coefficient \(\beta_O\) is estimated.</li>
-<li>\(\mathbf c_{it}\) holds district demographics (population, employment, students), the type of stop and a Sunday indicator.</li>
-<li>\(\gamma_{kl}\) lets the academic calendar (semester, exam, holiday) hit each type of stop differently.</li>
-<li>The \(f\)'s are smooth curves over week of the year, hour of the day and position along the route, with separate curves for weekdays and weekends.</li>
-<li>\(\delta_d(h, i)\) gives every stop its own daily rhythm.</li>
+<li>\(O_{it}\) is the number of buses at the stop in that hour. The usual approach is a fixed offset, which assumes that twice as many buses give twice as many boardings. Here the coefficient \(\beta_O\) is estimated from the data.</li>
+<li>\(\mathbf c_{it}\) contains district demographics (population, employment and students), the type of stop and an indicator for Sundays.</li>
+<li>\(\gamma_{kl}\) lets the academic calendar (semester, exam period or holiday) affect each type of stop differently.</li>
+<li>The \(f\)'s are smooth effects over week of the year, hour of the day and position along the route. Weekdays and weekends get separate curves.</li>
+<li>\(\delta_d(h, i)\) is a space-time interaction, which lets each stop have its own daily profile.</li>
 </ul>
 
-<h3>Smoothness as a prior</h3>
-<p>The smooth curves get <b>random walk priors</b>. A second-order random walk (RW2) says that the <em>change in slope</em> between neighbouring points is small:</p>
+<h3>Random walk priors</h3>
+<p>The smooth effects are given random walk priors. A second order random walk (RW2) says that the change in slope between neighbouring points should be small:</p>
 $$f(z_i) - 2f(z_{i-1}) + f(z_{i-2}) \sim \mathcal N(0, \tau_f^{-1}).$$
-<p>Large \(\tau_f\) means a stiff, smooth curve; small \(\tau_f\) lets the data bend it. The space-time interaction uses a Kronecker product of the temporal and spatial precision matrices,</p>
-<div class="demo mini" id="mini-smooth"><p class="how"><b>Try:</b> drag the prior strength. <b>Notice:</b> weak smoothing chases every noisy point; strong smoothing flattens the real morning and afternoon peaks. The right amount sits in between, and the model learns it from the data.</p><canvas id="c-smooth" aria-label="interactive illustration"></canvas><div class="controls"><label>smoothness (log τ) <input type="range" id="smooth-l" min="-3" max="5" step="0.1" value="1"><b id="smooth-lv"></b></label><button class="btn" id="smooth-new">new noise</button></div></div>
+<p>A large precision \(\tau_f\) gives a stiff and smooth curve, and a small \(\tau_f\) lets the data bend it more.</p>
+<div class="demo mini" id="mini-smooth"><p class="how">Change the strength of the prior. With weak smoothing the curve follows every noisy point, and with strong smoothing the morning and afternoon peaks disappear. The model estimates a level in between from the data.</p><canvas id="c-smooth" aria-label="interactive illustration"></canvas><div class="controls"><label>smoothness (log τ) <input type="range" id="smooth-l" min="-3" max="5" step="0.1" value="1"><b id="smooth-lv"></b></label><button class="btn" id="smooth-new">new noise</button></div></div>
+<p>The space-time interaction uses the Kronecker product of the temporal and spatial precision matrices,</p>
 $$\mathbf Q_\delta = \mathbf Q_{\text{time}} \otimes \mathbf Q_{\text{space}},$$
-<p>which makes neighbouring hours at the same stop, and neighbouring stops at the same hour, look alike.</p>
+<p>so that neighbouring hours at the same stop, and neighbouring stops at the same hour, are expected to have similar values.</p>
 
-<h3>Priors that prefer simple models</h3>
-<p>Each precision \(\tau\) needs a prior. Instead of the classic Gamma prior, I used <b>penalised complexity (PC) priors</b>. They start from a "base model" where the effect doesn't exist, and penalise moving away from it. In practice you only say something interpretable like "the standard deviation of this effect is above \(U\) with probability \(\alpha\)":</p>
-$$\Pr(\sigma > U) = \alpha \quad\Longrightarrow\quad \sigma \sim \mathrm{Exp}(\lambda),\quad \lambda = -\frac{\ln \alpha}{U}.$$
-<p>Everything was fitted with <b>INLA</b>, which approximates the posterior directly instead of sampling it, and is fast enough for hundreds of thousands of observations.</p>
+<h3>Penalised complexity priors</h3>
+<p>Each precision parameter needs a prior. I used penalised complexity (PC) priors and not the common Gamma prior. These start from a base model where the effect is not there at all, and penalise moving away from it. In practice we only have to specify a statement about the standard deviation of the effect:</p>
+$$\begin{gathered}\Pr(\sigma > U) = \alpha  \\ \Longrightarrow\;  \sigma \sim \mathrm{Exp}(\lambda),\quad \lambda = -\frac{\ln \alpha}{U}.\end{gathered}$$
+<p>The model was fitted with INLA, which approximates the posterior directly. This is fast enough for a few hundred thousand observations, where MCMC would be very slow.</p>
 
-<h2>What the model found</h2>
+<h2>Results</h2>
 <h3>The academic calendar</h3>
-<p>Raw data first: on a typical weekday the line carried a median of about 11,250 boardings in one direction during the semester, 8,560 during exams and 3,650 in holidays.</p>
+<p>Before the model, it helps to look at the raw numbers. On a typical weekday, one direction of the line had a median of about 11,250 boardings during the semester, 8,560 in the exam period and 3,650 in the holidays.</p>
 <figure><div class="frame"><img src="../img/regime-boxplot.jpg" alt="Box plot of daily weekday boardings: median 11,251 in semester, 8,562 in the exam period and 3,646 in holidays." loading="lazy"></div>
-<figcaption>Daily weekday boardings (one direction) by part of the academic year.</figcaption></figure>
-<p>In the model, the calendar's effect depends heavily on the type of stop. These are the estimated interaction coefficients, all with credible intervals well away from zero:</p>
+<figcaption>Daily weekday boardings in one direction, split by part of the academic year.</figcaption></figure>
+<p>In the model, the effect of the calendar depends a lot on the type of stop. These are the estimated interaction coefficients, and all of them have credible intervals that exclude zero:</p>
 <table>
 <tr><th>Stop type</th><th>× Exam</th><th>× Holiday</th><th>Holiday effect</th></tr>
-<tr><td>University</td><td>−0.15</td><td>−0.87 <span class="muted">[−0.90, −0.85]</span></td><td><b>−58%</b></td></tr>
+<tr><td>University</td><td>−0.15</td><td>−0.87 <span class="muted">[−0.90, −0.85]</span></td><td>−58%</td></tr>
 <tr><td>Student housing</td><td>−0.10</td><td>−0.27</td><td>−24%</td></tr>
 <tr><td>City centre</td><td>−0.04</td><td>−0.04</td><td>−4%</td></tr>
 </table>
-<p>On the log scale, \(e^{-0.87} = 0.42\): university stops lose 58% of their riders in the holidays, while the city centre barely notices. A model with one shared "holiday effect" would get every single stop wrong. Weather (temperature, rain, wind) had only weak associations once the calendar was in the model.</p>
+<p>Since \(e^{-0.87} = 0.42\), university stops lose 58% of their riders in the holidays, while the city centre is barely affected. A model with a single holiday effect for all stops would get most stops wrong. The weather variables (temperature, rain and wind) had only weak effects once the calendar was included.</p>
 
 <h3>Service frequency</h3>
-<p>The service coefficient came out at \(\hat\beta_O = 0.62\) (95% CI \([0.59, 0.64]\)). Since \(\mu \propto O^{0.62}\), doubling the number of buses gives</p>
+<p>The estimated service coefficient is \(\hat\beta_O = 0.62\), with a 95% credible interval of \([0.59, 0.64]\). Since \(\mu \propto O^{0.62}\), doubling the number of buses gives</p>
 $$2^{0.62} \approx 1.54,$$
-<p>so about <b>54% more boardings, not 100%</b>. Adding buses to an already busy route helps, with diminishing returns.</p>
+<p>which is about 54% more boardings, compared to the 100% a fixed offset would assume. More buses on an already busy route still help, but with diminishing returns.</p>
 
 <h3>Other effects</h3>
 <ul>
-<li>Sundays have about \(e^{-0.31} = 0.73\) times Saturday's ridership.</li>
-<li>Stops in student-housing districts have clearly higher baseline ridership (\(\hat\beta = 2.06\), CI \([0.55, 3.66]\)).</li>
-<li>Day-to-day variation not explained by anything else is large: a standard deviation of about 0.49 on the log scale.</li>
-<li>The space-time interaction matters: Dragvoll peaks in the afternoon as students leave campus, while residential stops are much flatter.</li>
+<li>Sundays have about \(e^{-0.31} = 0.73\) times the ridership of Saturdays.</li>
+<li>Stops in student housing districts have a clearly higher baseline (\(\hat\beta = 2.06\), CI \([0.55, 3.66]\)).</li>
+<li>There is a lot of day-to-day variation that the other terms do not explain, with a standard deviation of about 0.49 on the log scale.</li>
+<li>The space-time interaction is needed. Dragvoll has its peak in the afternoon when students leave campus, while residential stops have a much flatter profile.</li>
 </ul>
 
 <h2>Prediction</h2>
-<p>To test the model, I hid two full weeks, 7–13 April and 6–12 October, fitted on the remaining 351 days, and predicted the missing counts. Then I compared it with a ladder of simple baselines:</p>
+<p>To test the model, I removed two full weeks from the data (7–13 April and 6–12 October), fitted the model on the remaining 351 days and predicted the missing counts. I then compared the predictions with some simple baselines:</p>
 <table>
 <tr><th>Method</th><th>MAE</th><th>RMSE</th><th>r</th></tr>
 <tr><td>Global mean</td><td>20.31</td><td>32.55</td><td>0.000</td></tr>
 <tr><td>Per-stop mean</td><td>12.30</td><td>24.11</td><td>0.677</td></tr>
 <tr><td>Stop × day-type mean</td><td>11.32</td><td>22.80</td><td>0.718</td></tr>
-<tr><td>Stop × hour × day-type mean</td><td><b>5.63</b></td><td><b>11.34</b></td><td><b>0.942</b></td></tr>
+<tr><td>Stop × hour × day-type mean</td><td>5.63</td><td>11.34</td><td>0.942</td></tr>
 <tr><td>STAR model</td><td>7.90</td><td>16.55</td><td>0.869</td></tr>
 </table>
-<p>The lookup table beat my model on point predictions. That's less surprising than it looks. The lookup table has \(26 \times 19 \times 2 = 988\) free parameters and no regularisation. When the test weeks come from exactly the same stop-hour-day cells as the training data, memorising each cell's average is close to optimal.</p>
-<p>What the lookup table can't give you is a reason, or an honest uncertainty. For the model I drew from the Negative Binomial predictive distribution and checked how often the true value fell inside each interval:</p>
+<p>The lookup table with the mean for each stop, hour and day type has a lower error than my model. This makes sense when we think about it. The table has \(26 \times 19 \times 2 = 988\) free parameters with no regularisation, and the test weeks come from the same cells as the training data, so storing the average of each cell is close to optimal.</p>
+<p>The lookup table does not say anything about why the numbers are what they are, and it gives no uncertainty. For the STAR model, I drew from the Negative Binomial predictive distribution and checked how often the true value was inside each interval:</p>
 <table>
 <tr><th>Nominal</th><th>Empirical coverage</th><th>Mean width</th></tr>
 <tr><td>50%</td><td>60.6%</td><td>11.8</td></tr>
 <tr><td>80%</td><td>84.2%</td><td>22.6</td></tr>
-<tr><td>90%</td><td><b>92.0%</b></td><td>29.2</td></tr>
+<tr><td>90%</td><td>92.0%</td><td>29.2</td></tr>
 <tr><td>95%</td><td>95.7%</td><td>35.1</td></tr>
 </table>
-<p>The intervals are well calibrated, slightly conservative at the low end, and the coverage held up across seasons and day types. For planning a timetable, a calibrated range and an explanation are more useful than a slightly better point estimate.</p>
+<p>The coverage is close to the nominal levels, and slightly conservative for the narrow intervals. It was also stable across seasons and day types. For planning a timetable, I would argue that a calibrated interval and an explanation of the effects are more useful than a slightly smaller point error.</p>
 
 <h2>Try it yourself</h2>
-<p>Two of the model's estimates, made playable: how a university stop and a city-centre stop change between semester, exams and holidays, and how boardings respond to adding buses. Everything is relative to a semester day with three buses an hour.</p>
+<p>This demo uses two of the estimates from the model. You can compare a university stop and a city centre stop in the semester, the exam period and the holidays, and change the number of buses per hour. Everything is relative to a semester day with three buses an hour.</p>
 
-<div class="demo"><p class="how"><b>Try:</b> switch between semester, exams and holiday, then drag the number of buses (100 = a semester day with 3 buses an hour). <b>Notice:</b> the university stop collapses in the holidays while the city centre barely moves, and doubling the buses gives +54%, not +100%.</p><canvas id="cv" aria-label="Line 3, simplified interactive demo"></canvas><div class="controls"><button class="btn regime primary" data-r="semester">semester</button><button class="btn regime" data-r="exam">exams</button><button class="btn regime" data-r="holiday">holiday</button>
+<div class="demo"><p class="how">Switch between semester, exams and holiday, and change the number of buses (100 is a semester day with 3 buses an hour). The university stop drops a lot in the holidays while the city centre barely changes, and twice as many buses gives about 54% more boardings.</p><canvas id="cv" aria-label="Line 3, simplified interactive demo"></canvas><div class="controls"><button class="btn regime primary" data-r="semester">semester</button><button class="btn regime" data-r="exam">exams</button><button class="btn regime" data-r="holiday">holiday</button>
 <label>buses / hour <input type="range" id="buses" min="1" max="10" value="3"><b id="busesv">3</b></label></div></div>
 
 <!--DEMO-->
 </article>
-  <div class="next"><a href="../index.html#notes">← all notes</a><a href="bike-fitting-from-a-phone.html">Bike fitting from a phone camera →</a></div>
+  <div class="next"><a href="../index.html#notes">← all notes</a><a href="bike-fitting-from-a-phone.html">Can a phone camera fit your bike? →</a></div>
 </main>
 <footer class="wrap"><span>© 2026 Yawar Mahmood</span></footer>
 <script src="../theme.js"></script>
@@ -156,7 +157,7 @@ function draw() {
     ctx.fillStyle = css(s.col); ctx.beginPath(); ctx.roundRect(x, base - bh, bw, bh, 8); ctx.fill();
     ctx.fillStyle = css('--ink'); ctx.textAlign = 'center'; ctx.font = '600 20px DM Sans, sans-serif';
     ctx.fillText(Math.round(v), x + bw / 2, base - bh - 10);
-    ctx.font = '13px IBM Plex Mono, monospace'; ctx.fillStyle = css('--soft'); ctx.fillText(s.name, x + bw / 2, base + 22);
+    ctx.font = (w < 480 ? '11px' : '13px') + ' IBM Plex Mono, monospace'; ctx.fillStyle = css('--soft'); ctx.fillText(w < 480 ? s.name.replace(' stop', '') : s.name, x + bw / 2, base + 22);
   });
   ctx.strokeStyle = css('--line'); ctx.setLineDash([4, 5]);
   const y100 = base - (100 / maxV) * (base - top);
@@ -220,7 +221,7 @@ function draw() {
   ctx.fillStyle = css('--ink'); y.forEach((v, i) => { ctx.beginPath(); ctx.arc(X(i), Yv(v), 3.5, 0, 7); ctx.fill(); });
   ctx.strokeStyle = css('--tomato'); ctx.lineWidth = 3; ctx.beginPath(); f.forEach((v, i) => i ? ctx.lineTo(X(i), Yv(v)) : ctx.moveTo(X(i), Yv(v))); ctx.stroke();
   ctx.fillStyle = css('--faint'); ctx.font = '11px IBM Plex Mono, monospace'; ctx.fillText('05:00', X(0) - 10, h - 6); ctx.fillText('23:00', X(n - 1) - 30, h - 6);
-  ctx.fillText('dots: noisy hourly data · dashed: truth · orange: RW2 fit', 30, 14);
+  ctx.fillText(w < 480 ? 'dashed: truth · orange: fit' : 'dots: noisy hourly data · dashed: truth · orange: RW2 fit', 30, 14);
 }
 $('l').addEventListener('input', draw); $('new').onclick = () => { noise(); draw(); }; addEventListener('resize', draw);
 noise(); draw();

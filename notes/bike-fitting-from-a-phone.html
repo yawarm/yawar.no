@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bike fitting from a phone camera – Yawar Mahmood</title>
-<meta name="description" content="A professional bike fit means a studio and an expert. At APIIR we put it in an app: pose estimation, a bit of biomechanics, and 20,000+ riders.">
+<title>Can a phone camera fit your bike? – Yawar Mahmood</title>
+<meta name="description" content="At APIIR we made an app that gives a bike fit from a phone video, using pose estimation and a biomechanical model. It got more than 20,000 users.">
 <script>(()=>{let t=null;try{t=localStorage.getItem('theme')}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});if(window.fitMath)fitMath()"></script>
 </head>
 <body>
 <header class="wrap bar">
@@ -22,58 +22,55 @@
 <main class="narrow">
   <div class="article-head">
     <p class="kicker">note</p>
-    <h1>Bike fitting from a phone camera</h1>
-    <p class="lede">A professional bike fit means a studio and an expert. At APIIR we put it in an app: pose estimation, a bit of biomechanics, and 20,000+ riders.</p>
+    <h1>Can a phone camera fit your bike?</h1>
+    <p class="lede">At APIIR we made an app that gives a bike fit from a phone video, using pose estimation and a biomechanical model. It got more than 20,000 users.</p>
     <p class="meta">2022–25 · 7 min read</p>
   </div>
   <article>
-<p>A good bike fit makes riding faster, more comfortable and less likely to hurt your knees. The traditional way to get one is a studio visit: an expert, a trainer, sometimes motion-capture markers on your joints, and a bill to match. At <b>APIIR</b> we asked whether a phone could do most of that job.</p>
-<p>From 2022 to 2025 I was CPO, full-stack developer and lead data scientist there. We took the app from zero to <b>20,000+ active users</b> on iOS and Android, with a <b>4.5★</b> rating on the App Store, and raised more than $300K along the way. This note is about the technical core: turning a video of you on your bike into concrete adjustments.</p>
+<p>A good bike fit makes riding more comfortable and reduces the risk of knee pain and other injuries. The usual way to get one is to visit a studio, where an expert adjusts the bike, sometimes with motion capture markers on your joints, and this is quite expensive. At APIIR we wanted to see how much of this could be done with a phone.</p>
+<p>From 2022 to 2025 I was CPO, full-stack developer and lead data scientist at APIIR. We built the app from zero to more than 20,000 active users on iOS and Android, with a 4.5★ rating on the App Store, and raised more than $300K. In this note I write about the technical part, which is how a video of you on your bike becomes concrete adjustments.</p>
 
 <h2>The pipeline</h2>
-<p>At a high level, the app does three things:</p>
+<p>The app does three things:</p>
 <ol>
-<li><b>See the rider.</b> Pose estimation finds the body's joints in every frame of the video.</li>
-<li><b>Measure the rider.</b> From the joints we compute angles and how they change through the pedal stroke.</li>
-<li><b>Advise the rider.</b> A biomechanical model turns those measurements, together with the rider's body and bike, into personalised adjustments with centimetre-level precision.</li>
+<li>Pose estimation finds the joints of the rider in each frame of the video.</li>
+<li>From the joints we compute angles, and how they change through the pedal stroke.</li>
+<li>A biomechanical model combines the measurements with the body of the rider and the bike, and gives personalised adjustments with centimetre level precision.</li>
 </ol>
 
 <h2>Pose estimation</h2>
-<p>A pose-estimation model takes an image and outputs <b>keypoints</b>: pixel coordinates \((u_k, v_k)\) for joints like shoulder, hip, knee, ankle, elbow and wrist, each with a confidence score \(c_k \in [0, 1]\). Modern models do this in real time on a phone, but a single frame is never perfect. Joints get hidden behind the bike frame, clothes blur outlines, and the camera is rarely exactly side-on.</p>
-<p>The saving grace is that pedalling is <b>periodic</b>. You don't need one perfect frame; you get many pedal strokes, and can combine them. A simple and robust idea is to weight each measurement by its confidence and to average over the same phase of many strokes:</p>
+<p>A pose estimation model takes an image and returns keypoints, which are pixel coordinates \((u_k, v_k)\) for joints like the shoulder, hip, knee, ankle, elbow and wrist, each with a confidence \(c_k \in [0, 1]\). Modern models can do this in real time on a phone, but a single frame is rarely perfect. Joints can be hidden behind the frame of the bike, clothes make the outline unclear, and the camera is almost never exactly from the side.</p>
+<p>Pedalling is periodic, which helps. We do not need one perfect frame, since we get many pedal strokes that we can combine. A simple way to do this is to weight each measurement by its confidence, and average over the same phase of many strokes:</p>
 $$\hat\theta(\phi) = \frac{\sum_{s} c_{s}(\phi)\,\theta_{s}(\phi)}{\sum_{s} c_{s}(\phi)},$$
-<p>where \(\phi\) is the crank angle (the phase of the pedal stroke) and \(s\) runs over strokes. Noise that's random from stroke to stroke averages out; the rider's real posture doesn't.</p>
-<div class="demo mini" id="mini-strokes"><p class="how"><b>Try:</b> raise the noise, then add more pedal strokes. <b>Notice:</b> a single stroke (grey dots) is all over the place, but the average over many strokes (orange) hugs the true knee angle (dashed).</p><canvas id="c-strokes" aria-label="interactive illustration"></canvas><div class="controls"><label>keypoint noise <input type="range" id="strokes-sd" min="0" max="15" value="8"><b id="strokes-sdv"></b></label><label>strokes <input type="range" id="strokes-n" min="1" max="60" value="3"><b id="strokes-nv"></b></label><span class="readout" id="strokes-out"></span></div></div>
+<p>where \(\phi\) is the crank angle, meaning the phase of the pedal stroke, and \(s\) goes over the strokes. Noise that is random from stroke to stroke averages out, while the actual posture of the rider stays the same.</p>
+<div class="demo mini" id="mini-strokes"><p class="how">Increase the noise and then the number of pedal strokes. A single stroke (grey dots) is very noisy, but the average over many strokes (orange) is close to the true knee angle (dashed).</p><canvas id="c-strokes" aria-label="interactive illustration"></canvas><div class="controls"><label>keypoint noise <input type="range" id="strokes-sd" min="0" max="15" value="8"><b id="strokes-sdv"></b></label><label>strokes <input type="range" id="strokes-n" min="1" max="60" value="3"><b id="strokes-nv"></b></label><span class="readout" id="strokes-out"></span></div></div>
 
 <h2>From keypoints to angles</h2>
-<p>Most of bike fitting is about a handful of joint angles. Given three keypoints, say hip \(\mathbf h\), knee \(\mathbf k\) and ankle \(\mathbf a\), the knee angle is the angle between the thigh and the shin:</p>
+<p>Most of bike fitting is about a few joint angles. Given three keypoints, for example the hip \(\mathbf h\), the knee \(\mathbf k\) and the ankle \(\mathbf a\), the knee angle is the angle between the thigh and the shin:</p>
 $$\theta_{\text{knee}} = \arccos\!\left(\frac{(\mathbf h - \mathbf k)\cdot(\mathbf a - \mathbf k)}{\lVert\mathbf h - \mathbf k\rVert\,\lVert\mathbf a - \mathbf k\rVert}\right).$$
-<p>The same formula with different joints gives the hip angle (shoulder, hip, knee), the elbow angle and the back angle. Tracked over a whole pedal stroke, each one becomes a curve. The most informative points on those curves are the extremes, especially when the pedal is at the bottom of the stroke and the leg is closest to straight.</p>
-<div class="demo mini" id="mini-angle"><p class="how"><b>Try:</b> drag the hip, knee and ankle. <b>Notice:</b> three keypoints are all it takes to measure a joint angle, and moving the camera closer (scaling all points) doesn't change it.</p><canvas id="c-angle" aria-label="interactive illustration"></canvas><div class="controls"><span class="readout" id="angle-out"></span></div></div>
-<p>Angles also have a nice property for a phone app: they don't depend on how far away the camera is. Distances in pixels do, so turning "raise the saddle" into "raise the saddle by 1.5 cm" needs a scale, for example from a known length on the bike or the rider's own measurements.</p>
+<p>With other joints, the same formula gives the hip angle (shoulder, hip and knee), the elbow angle and the back angle. If we track an angle over a whole pedal stroke, we get a curve, and the most useful points on it are the extremes, especially when the pedal is at the bottom and the leg is closest to straight.</p>
+<div class="demo mini" id="mini-angle"><p class="how">Drag the hip, the knee and the ankle. Three keypoints are enough to compute the angle, and moving the camera closer (scaling all the points) does not change it.</p><canvas id="c-angle" aria-label="interactive illustration"></canvas><div class="controls"><span class="readout" id="angle-out"></span></div></div>
+<p>Angles also do not depend on how far away the camera is, while distances in pixels do. To turn "raise the saddle" into "raise the saddle by 1.5 cm", we therefore need a scale, for example from a known length on the bike or from the measurements of the rider.</p>
 
 <h2>From angles to adjustments</h2>
-<p>Bike fitting has a long list of rules of thumb. One classic is to set the saddle height to about 0.883 × inseam, measured from the centre of the bottom bracket. Another is that the knee should still be slightly bent at the bottom of the stroke, typically somewhere around 25–40° of flexion, depending on the rider and the style of riding.</p>
-<p>Rules like these are a starting point, but they ignore the actual rider: flexibility, how they sit, how they pedal. That's where measuring beats formulas. Our fitting algorithms fused the pose estimates with a <b>biomechanical model</b> of the rider and the bike, so a recommendation like "saddle up" came from the measured angles, the rider's body and the bike's geometry together.</p>
-<p>The underlying geometry is simple. Treat the leg as two rigid segments, thigh length \(L_t\) and shin length \(L_s\), between the hip and the pedal. If the distance from hip to pedal is \(d\), the law of cosines gives the knee angle directly:</p>
-$$d^2 = L_t^2 + L_s^2 - 2L_tL_s\cos\theta_{\text{knee}} \quad\Longrightarrow\quad \theta_{\text{knee}} = \arccos\!\left(\frac{L_t^2 + L_s^2 - d^2}{2L_tL_s}\right).$$
-<p>Raise the saddle and \(d\) grows at the bottom of the stroke, so the knee opens up. That's the relationship the demo at the bottom of this page lets you play with.</p>
+<p>There are many rules of thumb in bike fitting. A classic one is to set the saddle height to about 0.883 times the inseam, measured from the centre of the bottom bracket. Another is that the knee should still be slightly bent at the bottom of the stroke, typically around 25–40° of flexion, depending on the rider and the type of riding.</p>
+<p>These rules are a starting point, but they do not take into account how flexible the rider is, how they sit or how they pedal. Our fitting algorithms combined the pose estimates with a biomechanical model of the rider and the bike, so a recommendation like raising the saddle came from the measured angles, the body of the rider and the geometry of the bike together.</p>
+<p>The geometry behind this is simple. If we treat the leg as two rigid segments, the thigh with length \(L_t\) and the shin with length \(L_s\), and the distance from the hip to the pedal is \(d\), the law of cosines gives the knee angle directly:</p>
+$$\begin{gathered}d^2 = L_t^2 + L_s^2 - 2L_tL_s\cos\theta_{\text{knee}}  \\ \Longrightarrow\;  \theta_{\text{knee}} = \arccos\!\left(\frac{L_t^2 + L_s^2 - d^2}{2L_tL_s}\right).\end{gathered}$$
+<p>When the saddle is raised, \(d\) increases at the bottom of the stroke, and the knee opens up. This is the relationship in the demo at the bottom of the page.</p>
 
-<h2>Building it as a product</h2>
-<p>The model was only part of the job. As CPO I also owned the roadmap, user research and go-to-market, and I architected the platform: a <b>Flutter</b> app for both iOS and Android from one codebase, a <b>Django</b> backend, and cloud infrastructure built to scale from day one.</p>
-<ul>
-<li><b>The video is part of the problem.</b> A pose model can only work with what it's given, so camera angle and distance matter as much as the model.</li>
-<li><b>Precision you can act on.</b> Advice is only useful if a rider can actually make the change with an Allen key, which is why centimetre-level precision was the target.</li>
-</ul>
+<h2>Building the product</h2>
+<p>The model was only one part of the work. As CPO I was also responsible for the roadmap, user research and go-to-market, and I designed the platform, with a Flutter app for both iOS and Android from one codebase, a Django backend, and cloud infrastructure built to scale.</p>
+<p>A pose model can only work with the video it gets, so how the phone is placed and the angle of the camera matter as much as the model. The advice also has to be precise enough that a rider can make the change with an Allen key, which is why we aimed for centimetre level precision.</p>
 
 <h2>Try it yourself</h2>
-<p>A simple 2D rider: the leg is two rigid segments from the hip (on the saddle) to the pedal. Change the saddle height and watch the knee angle through the pedal stroke. The shaded band is the typical range of knee flexion at the bottom of the stroke.</p>
+<p>This is a simple rider in 2D, where the leg is two rigid segments from the hip on the saddle to the pedal. You can change the saddle height and see how the knee angle changes through the pedal stroke. The shaded band is the typical range of knee flexion at the bottom of the stroke.</p>
 
-<div class="demo"><p class="how"><b>Try:</b> drag the saddle height. <b>Notice:</b> the marker shows knee flexion at the bottom of the stroke. Too low and the knee stays bent; too high and the leg straightens.</p><canvas id="cv" aria-label="Find the saddle height interactive demo"></canvas><div class="controls"><label>saddle height <input type="range" id="saddle" min="62" max="77" value="72"><b id="saddlev"></b></label><span class="readout" id="knee"></span></div></div>
-<p class="note-small">A deliberately simple model: fixed thigh and shin lengths, the hip fixed on the saddle, the foot on the pedal circle. Real fitting also has to deal with ankle movement, saddle setback and how the rider actually sits.</p>
+<div class="demo"><p class="how">When you change the saddle height, the marker shows the knee flexion at the bottom of the stroke. With a low saddle the knee stays bent, and with a high saddle the leg becomes straight.</p><canvas id="cv" aria-label="Find the saddle height interactive demo"></canvas><div class="controls"><label>saddle height <input type="range" id="saddle" min="62" max="77" value="72"><b id="saddlev"></b></label><span class="readout" id="knee"></span></div></div>
+<p class="note-small">This is a simple model with fixed thigh and shin lengths, the hip fixed on the saddle and the foot on the pedal circle. A real bike fit also has to take into account ankle movement, saddle setback and how the rider sits.</p>
 <!--DEMO-->
 </article>
-  <div class="next"><a href="where-do-the-students-go.html">← Where do the students go in summer?</a><a href="an-agent-for-door-paperwork.html">An agent that reads door paperwork →</a></div>
+  <div class="next"><a href="where-do-the-students-go.html">← Where do the students go in summer?</a><a href="an-agent-for-door-paperwork.html">Can an AI agent read door paperwork? →</a></div>
 </main>
 <footer class="wrap"><span>© 2026 Yawar Mahmood</span></footer>
 <script src="../theme.js"></script>
@@ -113,7 +110,7 @@ function draw() {
   ctx.font = '13px IBM Plex Mono, monospace'; ctx.fillStyle = css('--soft');
   ctx.fillText(`knee flexion now: ${flex.toFixed(0)}°`, 14, 22);
   // band
-  const bx = w - 190, by = 20, bw = 170, X = v => bx + (v - 0) / 70 * bw;
+  const nb = w < 480, bx = nb ? 14 : w - 190, by = nb ? 36 : 20, bw = nb ? Math.min(220, w - 28) : 170, X = v => bx + (v - 0) / 70 * bw;
   ctx.fillStyle = css('--teal'); ctx.globalAlpha = 0.22; ctx.fillRect(X(25), by, X(40) - X(25), 18); ctx.globalAlpha = 1;
   ctx.strokeStyle = css('--line'); ctx.lineWidth = 1; ctx.strokeRect(bx, by, bw, 18);
   if (minFlex < 900) { ctx.fillStyle = ok ? css('--teal') : css('--tomato'); ctx.fillRect(X(Math.max(0, Math.min(70, minFlex))) - 2, by - 3, 4, 24); }

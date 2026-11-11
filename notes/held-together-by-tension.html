@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Held together by tension – Yawar Mahmood</title>
-<meta name="description" content="Tensegrity structures look like they shouldn't stand. Finding their shape is an energy minimisation problem.">
+<title>How does a tensegrity structure find its shape? – Yawar Mahmood</title>
+<meta name="description" content="Tensegrity structures are held up by cables alone. We found their shape by minimising the energy with BFGS.">
 <script>(()=>{let t=null;try{t=localStorage.getItem('theme')}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});if(window.fitMath)fitMath()"></script>
 </head>
 <body>
 <header class="wrap bar">
@@ -22,40 +22,36 @@
 <main class="narrow">
   <div class="article-head">
     <p class="kicker">note</p>
-    <h1>Held together by tension</h1>
-    <p class="lede">Tensegrity structures look like they shouldn't stand. Finding their shape is an energy minimisation problem.</p>
+    <h1>How does a tensegrity structure find its shape?</h1>
+    <p class="lede">Tensegrity structures are held up by cables alone. We found their shape by minimising the energy with BFGS.</p>
     <p class="meta">2024 · 4 min read</p>
   </div>
   <article>
-<p>Tensegrity structures are those sculptures where rigid bars seem to float in mid-air, held in place only by cables. No bar touches another. Finding the shape they settle into is an optimisation problem, and it has more structure than I expected.</p>
+<p>Tensegrity structures are structures where rigid bars are held in place only by cables, and no two bars touch each other. They look like they should not be able to stand. Finding the shape they settle into can be written as an optimisation problem, which is what this project was about.</p>
 
 <figure><div class="frame tint-plum" style="border-radius:12px"><svg id="spin" viewBox="0 0 480 300" role="img" aria-label="A slowly rotating three-bar tensegrity prism"><line x1="318.4" y1="206.9" x2="154.3" y2="210.1" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="154.3" y1="210.1" x2="247.3" y2="244.4" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="247.3" y1="244.4" x2="318.4" y2="206.9" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="145.3" y1="81.3" x2="293.6" y2="99.3" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="293.6" y1="99.3" x2="281.1" y2="57.9" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="281.1" y1="57.9" x2="145.3" y2="81.3" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="318.4" y1="206.9" x2="293.6" y2="99.3" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="154.3" y1="210.1" x2="281.1" y2="57.9" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="247.3" y1="244.4" x2="145.3" y2="81.3" stroke="var(--plum)" stroke-width="1.6" stroke-dasharray="1 0"/><line x1="318.4" y1="206.9" x2="145.3" y2="81.3" stroke="var(--ink)" stroke-width="7" stroke-linecap="round"/><line x1="154.3" y1="210.1" x2="293.6" y2="99.3" stroke="var(--ink)" stroke-width="7" stroke-linecap="round"/><line x1="247.3" y1="244.4" x2="281.1" y2="57.9" stroke="var(--ink)" stroke-width="7" stroke-linecap="round"/><circle cx="318.4" cy="206.9" r="5" fill="var(--tomato)"/><circle cx="154.3" cy="210.1" r="5" fill="var(--tomato)"/><circle cx="247.3" cy="244.4" r="5" fill="var(--tomato)"/><circle cx="145.3" cy="81.3" r="5" fill="var(--tomato)"/><circle cx="293.6" cy="99.3" r="5" fill="var(--tomato)"/><circle cx="281.1" cy="57.9" r="5" fill="var(--tomato)"/></svg></div>
-<figcaption>A three-bar tensegrity prism: thick lines are bars, thin lines are cables, dots are joints.</figcaption></figure>
+<figcaption>A three-bar tensegrity prism. The thick lines are bars, the thin lines are cables and the dots are joints.</figcaption></figure>
 
 <h2>A structure as a graph</h2>
-<p>A tensegrity is a graph \(G = (V, E)\): joints are vertices, and every edge is either a bar or a cable. If joint \(i\) sits at \(x^{(i)} \in \mathbb R^3\), the unknown is the vector of all positions \(X = (x^{(1)}, \dots, x^{(N)}) \in \mathbb R^{3N}\). The structure settles where its <b>total energy</b> is as low as possible.</p>
+<p>We represent a tensegrity structure as a graph \(G = (V, E)\), where the joints are vertices and each edge is either a bar or a cable. If joint \(i\) is at \(x^{(i)} \in \mathbb R^3\), the unknown is the vector of all positions \(X = (x^{(1)}, \dots, x^{(N)}) \in \mathbb R^{3N}\). The structure settles where its total energy is as low as possible.</p>
 
 <h2>The energy</h2>
-<p><b>Bars</b> are stiff springs that resist both stretching and squashing. With rest length \(\ell_{ij}\) and current length \(L_{ij} = \lVert x^{(i)} - x^{(j)}\rVert\):</p>
+<p>Bars are stiff springs, which resist being both stretched and compressed. With rest length \(\ell_{ij}\) and current length \(L_{ij} = \lVert x^{(i)} - x^{(j)}\rVert\), the elastic energy of a bar is</p>
 $$E^{\text{bar}}_{\text{elast}}(e_{ij}) = \frac{c}{2\ell_{ij}^2}\,(L_{ij} - \ell_{ij})^2.$$
-<p><b>Gravity</b> pulls on the bars' mass, with line density \(\rho\):</p>
+<p>The bars also have mass, and with line density \(\rho\) the gravitational energy is</p>
 $$E^{\text{bar}}_{\text{grav}}(e_{ij}) = \rho g\,\ell_{ij}\,\frac{x_3^{(i)} + x_3^{(j)}}{2}.$$
-<p><b>Cables</b> only resist stretching. A slack cable does nothing:</p>
+<p>Cables only resist being stretched, and a slack cable has no energy:</p>
 $$E^{\text{cable}}_{\text{elast}}(e_{ij}) = \begin{cases}\dfrac{k}{2\ell_{ij}^2}\,(L_{ij} - \ell_{ij})^2 & L_{ij} \gt \ell_{ij},\\[4pt] 0 & \text{otherwise.}\end{cases}$$
-<p>And <b>external loads</b>, weights \(m_i\) hanging from the joints: \(E_{\text{ext}} = \sum_i m_i g\, x_3^{(i)}\). The objective is the sum:</p>
-$$E(X) = \sum_{e_{ij} \in \mathcal B}\big(E^{\text{bar}}_{\text{elast}} + E^{\text{bar}}_{\text{grav}}\big) + \sum_{e_{ij} \in \mathcal C} E^{\text{cable}}_{\text{elast}} + E_{\text{ext}}(X).$$
-<p>Two kinds of constraints keep it physical: some joints are fixed, \(x^{(i)} = p^{(i)}\), and nothing may go below the ground, \(x^{(i)}_3 \ge f(x^{(i)}_1, x^{(i)}_2)\).</p>
+<p>Finally, there can be external loads, which are weights \(m_i\) hanging from the joints, with energy \(E_{\text{ext}} = \sum_i m_i g\, x_3^{(i)}\). The objective function is the sum of these terms:</p>
+$$\begin{aligned}E(X) = {} & \sum_{e_{ij} \in \mathcal B}\big(E^{\text{bar}}_{\text{elast}} + E^{\text{bar}}_{\text{grav}}\big) \\ & + \sum_{e_{ij} \in \mathcal C} E^{\text{cable}}_{\text{elast}} + E_{\text{ext}}(X).\end{aligned}$$
+<p>We also have two kinds of constraints. Some joints can be fixed, \(x^{(i)} = p^{(i)}\), and no joint can go below the ground, \(x^{(i)}_3 \ge f(x^{(i)}_1, x^{(i)}_2)\).</p>
 
 <h2>Existence of solutions</h2>
-<p>With fixed joints and a connected graph, every free joint is within a bounded distance of a fixed one, so the feasible set is compact. \(E\) is continuous, and the extreme value theorem guarantees a global minimum. With a ground profile instead, you need the ground to rise towards infinity away from the origin (coercivity). On a perfectly flat floor the argument breaks down: mathematically, a structure could keep spreading out and lowering its energy.</p>
+<p>With fixed joints and a connected graph, every free joint is within a bounded distance of a fixed joint, so the feasible set is compact. \(E\) is continuous, and by the extreme value theorem it has a global minimum. With a ground constraint, we need the ground to rise towards infinity away from the origin (coercivity). On a completely flat floor this argument does not work, since the structure could in principle keep spreading out and lower its energy.</p>
 
 <h2>Cable nets</h2>
-<p>With only cables and fixed joints, the problem is well behaved.</p>
-<ul>
-<li><b>It's \(C^1\), but not \(C^2\).</b> The gradient of a cable term, \(\frac{k}{\ell_{ij}^2}\big(x^{(i)} - x^{(j)}\big)\big(1 - \frac{\ell_{ij}}{L_{ij}}\big)\), goes smoothly to zero as the cable goes slack. The second derivative jumps there.</li>
-<li><b>It's convex, but not strictly.</b> Each cable term is a convex function of a norm, and the load term is linear.</li>
-</ul>
-<p>So \(\nabla E(X^*) = 0\) is not just necessary but sufficient: any stationary point is a global minimum. With 4 fixed corners, 4 free joints, 8 cables of length 3, \(k = 3\) and \(mg = 1/6\), BFGS found the exact solution from a naive starting guess:</p>
+<p>If we only have cables and fixed joints, the problem is well behaved. The objective is \(C^1\) but not \(C^2\). The gradient of a cable term, \(\frac{k}{\ell_{ij}^2}\big(x^{(i)} - x^{(j)}\big)\big(1 - \frac{\ell_{ij}}{L_{ij}}\big)\), goes to zero when the cable goes slack, but the second derivative jumps at that point. The objective is also convex, but not strictly convex, since each cable term is a convex function of a norm and the load term is linear.</p>
+<p>This means that \(\nabla E(X^*) = 0\) is both necessary and sufficient, so any stationary point is a global minimum. With 4 fixed corners, 4 free joints, 8 cables of length 3, \(k = 3\) and \(mg = 1/6\), BFGS found the exact solution from a simple starting guess:</p>
 <table>
 <tr><th>Joint</th><th>Start</th><th>BFGS</th><th>Exact</th></tr>
 <tr><td>\(x^{(5)}\)</td><td>(0, 0, 10)</td><td>(2, 2, −1.5)</td><td>(2, 2, −1.5)</td></tr>
@@ -66,9 +62,9 @@ $$E(X) = \sum_{e_{ij} \in \mathcal B}\big(E^{\text{bar}}_{\text{elast}} + E^{\te
 <p class="muted">27 iterations, 0.15 seconds.</p>
 
 <h2>Adding bars</h2>
-<p>Bars break convexity. A quick counterexample: take \(\lambda = \tfrac12\) and \(y = -x\). Then \(E\big(\tfrac12 x + \tfrac12 y\big) = E(0)\), where every bar is collapsed to zero length and stores energy \(\sum k/2 \gt 0\), while the average \(\tfrac12E(x) + \tfrac12E(-x)\) can be zero. The convexity inequality fails.</p>
-<div class="demo mini" id="mini-landscape"><p class="how"><b>Try:</b> click anywhere on the curve to drop a ball, then switch between the two energies. <b>Notice:</b> with cables only, every ball rolls to the same bottom (convex). Add a bar and the landscape gets two valleys, so where you start decides where you end up.</p><canvas id="c-landscape" aria-label="interactive illustration"></canvas><div class="controls"><button class="btn primary" id="landscape-cab">cables only</button><button class="btn" id="landscape-bar">with a bar</button><span class="readout" id="landscape-out"></span></div></div>
-<p>So now \(\nabla E = 0\) is only necessary, and different starting points can end in different local minima. Each of those is still a physically stable state, just maybe not the lowest one. For a tensegrity dome (4 fixed joints, 4 bars of length 10, 8 cables):</p>
+<p>When we add bars, the problem is no longer convex. To see this, take \(\lambda = \tfrac12\) and \(y = -x\). Then \(E\big(\tfrac12 x + \tfrac12 y\big) = E(0)\), where every bar has length zero and the energy is \(\sum k/2 \gt 0\), while the average \(\tfrac12E(x) + \tfrac12E(-x)\) can be zero. So the convexity condition does not hold.</p>
+<div class="demo mini" id="mini-landscape"><p class="how">Click on the curve to drop a ball, and switch between the two energies. With only cables, every ball rolls to the same minimum. With a bar the curve has two minima, so the end point depends on where the ball starts.</p><canvas id="c-landscape" aria-label="interactive illustration"></canvas><div class="controls"><button class="btn primary" id="landscape-cab">cables only</button><button class="btn" id="landscape-bar">with a bar</button><span class="readout" id="landscape-out"></span></div></div>
+<p>This means that \(\nabla E = 0\) is only a necessary condition, and different starting points can end up in different local minima. Each local minimum still corresponds to a stable physical state, but not necessarily the one with the lowest energy. For a tensegrity dome with 4 fixed joints, 4 bars of length 10 and 8 cables, we got:</p>
 <table>
 <tr><th>Run</th><th>Iterations</th><th>Time</th><th>Result</th></tr>
 <tr><td>symmetric start (0, 0, 3)</td><td>66</td><td>0.62 s</td><td>matches the exact solution to about 3 decimals</td></tr>
@@ -76,25 +72,25 @@ $$E(X) = \sum_{e_{ij} \in \mathcal B}\big(E^{\text{bar}}_{\text{elast}} + E^{\te
 </table>
 
 <h2>BFGS</h2>
-<p><b>BFGS</b> is a quasi-Newton method. Instead of computing the Hessian, it builds up an approximation of the inverse Hessian \(H_k\) from gradients only. With step \(s_k = X_{k+1} - X_k\) and gradient change \(y_k = \nabla E_{k+1} - \nabla E_k\):</p>
-$$H_{k+1} = \big(I - \rho_k s_k y_k^\top\big)H_k\big(I - \rho_k y_k s_k^\top\big) + \rho_k s_k s_k^\top, \qquad \rho_k = \frac{1}{y_k^\top s_k}.$$
-<p>Each step size is chosen by a line search satisfying the <b>Wolfe conditions</b>. The Armijo condition makes sure each step actually lowers the energy enough; the curvature condition prevents steps that are too short to make progress:</p>
-$$E(X_k + \alpha p_k) \le E(X_k) + c_1\alpha\,\nabla E_k^\top p_k, \qquad \nabla E(X_k + \alpha p_k)^\top p_k \ge c_2\,\nabla E_k^\top p_k.$$
-<p>We used \(c_1 = 0.1\) and an extrapolation factor of 3, tuned by trial and error.</p>
+<p>BFGS is a quasi-Newton method, which builds up an approximation \(H_k\) of the inverse Hessian from the gradients, without computing the Hessian itself. With the step \(s_k = X_{k+1} - X_k\) and the change in gradient \(y_k = \nabla E_{k+1} - \nabla E_k\), the update is</p>
+$$\begin{aligned}H_{k+1} &= \big(I - \rho_k s_k y_k^\top\big)H_k\big(I - \rho_k y_k s_k^\top\big) \\ &\quad + \rho_k s_k s_k^\top, \\ \rho_k &= \frac{1}{y_k^\top s_k}.\end{aligned}$$
+<p>The step length is found with a line search that satisfies the Wolfe conditions. The Armijo condition makes sure that each step lowers the energy enough, and the curvature condition stops the steps from being too short:</p>
+$$\begin{gathered}E(X_k + \alpha p_k) \le E(X_k) + c_1\alpha\,\nabla E_k^\top p_k, \\ \nabla E(X_k + \alpha p_k)^\top p_k \ge c_2\,\nabla E_k^\top p_k.\end{gathered}$$
+<p>We used \(c_1 = 0.1\) and an extrapolation factor of 3, which we found by trial and error.</p>
 
 <h2>Free-standing structures</h2>
-<p>Finally, I removed the fixed joints, added cables along the base, and let the structure stand on a bowl-shaped ground \(f(x_1, x_2) = (x_1^2 + x_2^2)/20\). The ground constraint was enforced with a penalty term (scale 0.1), so the optimiser trades energy against constraint violation. From a rough initial guess, it found a balanced dome in which every cable is taut:</p>
+<p>In the last part I removed the fixed joints, added cables along the base and let the structure stand on a bowl shaped ground \(f(x_1, x_2) = (x_1^2 + x_2^2)/20\). The ground constraint was added as a penalty term with scale 0.1, so the optimiser trades off energy against breaking the constraint. From a rough starting guess, it found a stable dome where all the cables are tight:</p>
 <div class="stats">
   <div class="stat"><b>32</b><span>iterations</span></div>
   <div class="stat"><b>0.50 s</b><span>runtime</span></div>
   <div class="stat"><b>8</b><span>joints, none fixed</span></div>
 </div>
-<p>The top joints landed at a height of about 9.17, close to the 9.54 of the dome with fixed corners. They aren't identical, and that's expected: the base now rests on a curved floor instead of being pinned at height zero.</p>
+<p>The top joints ended up at a height of about 9.17, which is close to the 9.54 of the dome with fixed corners. We would not expect them to be equal, since the base now rests on a curved floor and is not fixed at height zero.</p>
 
 <h2>Try it yourself</h2>
-<p>The cable problem from above, in 2D and alive: a cable made of short segments, hanging between two anchors. Just like in the real problem, segments only pull (a slack one does nothing), gravity pulls on the joints, and the whole thing slides downhill in energy until it settles.</p>
+<p>This is the cable problem from above in 2D, with a cable made of short segments hanging between two anchors. As in the full problem, the segments can only pull, gravity pulls on the joints, and the cable moves towards lower energy until it settles.</p>
 
-<div class="demo"><p class="how"><b>Try:</b> click a joint to hang a weight on it, drag a joint and let go, or drag one of the black anchors. <b>Notice:</b> the cable always settles into the shape with the lowest energy. Weights make the segments above them pull harder (redder); push the anchors together and the cable goes slack (dashed), because a cable can’t push.</p><canvas id="cv" aria-label="Let it find its shape interactive demo"></canvas><div class="controls"><button id="netreset" class="btn">remove weights</button><button id="netrebuild" class="btn">reset</button><span class="readout" id="nete"></span></div></div>
+<div class="demo"><p class="how">Click a joint to hang a weight on it, or drag a joint or one of the black anchors. The cable settles in the shape with the lowest energy. The segments above a weight pull harder and turn red, and if the anchors are moved close together the cable goes slack (dashed), since a cable can only pull.</p><canvas id="cv" aria-label="Let it find its shape interactive demo"></canvas><div class="controls"><button id="netreset" class="btn">remove weights</button><button id="netrebuild" class="btn">reset</button><span class="readout" id="nete"></span></div></div>
 <p class="note-small">Dashed lines are slack cables. Colour shows how hard a cable is being stretched.</p>
 <!--DEMO-->
 <p class="closer">The code and report are on <a href="https://github.com/yawarm/TMA4180-Optimization1">GitHub</a>.</p>
@@ -126,7 +122,7 @@ $$E(X_k + \alpha p_k) \le E(X_k) + c_1\alpha\,\nabla E_k^\top p_k, \qquad \nabla
 })();
 </script>
 </article>
-  <div class="next"><a href="when-does-it-rain-in-tokyo.html">← When does it rain in Tokyo?</a><a href="four-agents-one-pacman.html">Four AI agents, one tmux session →</a></div>
+  <div class="next"><a href="when-does-it-rain-in-tokyo.html">← When does it rain in Tokyo?</a><a href="four-agents-one-pacman.html">What happens when four AI agents work as a team? →</a></div>
 </main>
 <footer class="wrap"><span>© 2026 Yawar Mahmood</span></footer>
 <script src="../theme.js"></script>

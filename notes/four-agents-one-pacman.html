@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Four AI agents, one tmux session – Yawar Mahmood</title>
-<meta name="description" content="I gave a team of Claude agents separate jobs, a shared folder and a watcher script, and asked them to build a game together.">
+<title>What happens when four AI agents work as a team? – Yawar Mahmood</title>
+<meta name="description" content="I gave four Claude agents separate roles and a shared folder, and let them build two small games together while a script passed messages between them.">
 <script>(()=>{let t=null;try{t=localStorage.getItem('theme')}catch(e){}if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('article'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});if(window.fitMath)fitMath()"></script>
 </head>
 <body>
 <header class="wrap bar">
@@ -22,29 +22,29 @@
 <main class="narrow">
   <div class="article-head">
     <p class="kicker">note</p>
-    <h1>Four AI agents, one tmux session</h1>
-    <p class="lede">I gave a team of Claude agents separate jobs, a shared folder and a watcher script, and asked them to build a game together.</p>
+    <h1>What happens when four AI agents work as a team?</h1>
+    <p class="lede">I gave four Claude agents separate roles and a shared folder, and let them build two small games together while a script passed messages between them.</p>
     <p class="meta">2026 · 4 min read</p>
   </div>
   <article>
-<p>I wanted to see what happens if several Claude Code agents get separate jobs, the way a small team works, and have to coordinate on their own. The setup was four agents and a few shell scripts.</p>
+<p>I wanted to see what happens if several Claude Code agents get separate jobs, like in a small team, and have to coordinate by themselves. The setup was four agents and a few shell scripts.</p>
 
 <h2>The team</h2>
 <ul>
-<li><b>Lead</b>: plans the work, writes the task list and briefs the others. Never writes code.</li>
-<li><b>Coder 1</b> and <b>Coder 2</b>: full-stack generalists, split by which files they own, not by frontend/backend.</li>
-<li><b>Reviewer</b>: reviews every plan and every piece of code, asks the annoying questions, and has to approve before anyone builds. Never writes code either.</li>
+<li>The lead plans the work, writes the task list and briefs the others, but never writes code itself.</li>
+<li>Coder 1 and Coder 2 are full-stack developers, and the work is split between them by which files they own.</li>
+<li>The reviewer reviews every plan and every piece of code, and has to approve before anyone starts building. It does not write code either.</li>
 </ul>
-<p>The team rules live in a shared <code>CLAUDE.md</code>. One rule matters more than the rest: <b>coders post a plan and wait for the reviewer's approval before they write any code.</b></p>
+<p>The rules for the team are in a shared <code>CLAUDE.md</code>. The most important rule is that the coders have to post a plan and wait for the reviewer to approve it before they write any code.</p>
 
 <h2>tmux, files and a watcher</h2>
-<p>Each agent runs in its own tmux window. A start script creates the session, opens one window per role plus one for a watcher, and launches each agent with its role:</p>
+<p>Each agent runs in its own tmux window. A start script creates the session, opens one window for each role and one for a watcher, and starts each agent with its role:</p>
 <pre><code>tmux new-session -d -s team -n "lead" -c "$DIR"
 tmux send-keys -t team:lead "bash $DIR/launchers/lead.sh" Enter
 tmux new-window -t team -n "coder1" -c "$DIR"
 tmux send-keys -t team:coder1 "bash $DIR/launchers/coder1.sh" Enter
 # ... coder2, reviewer, and the watcher</code></pre>
-<p>The agents never talk to each other directly. They communicate through plain files: <code>tasks.md</code> for the task list, and one inbox per role in <code>messages/</code>. The glue is a small bash loop that checks file modification times every three seconds and literally types a nudge into the right terminal when something changes:</p>
+<p>The agents never talk to each other directly. They write to plain files, with <code>tasks.md</code> for the task list and one file per role in <code>messages/</code>. A small bash loop checks when the files were last modified every three seconds, and when something changes it types a message into the right terminal:</p>
 <pre><code>while true; do
   sleep 3
   NEW_TASKS=$(stat -f %m "$DIR/tasks.md")
@@ -56,61 +56,56 @@ tmux send-keys -t team:coder1 "bash $DIR/launchers/coder1.sh" Enter
   fi
   # same idea for lead.md, coder1.md, coder2.md and reviewer.md
 done</code></pre>
-<p>It's crude: no framework and no message queue, just files and keystrokes. A side effect is that every message is a markdown file I can read afterwards.</p>
-<div class="demo mini" id="mini-watcher"><p class="how"><b>Try:</b> click a file to simulate an agent writing to it. <b>Notice:</b> the watcher only checks modification times every 3 seconds, then types a nudge into exactly the windows that need to know. These are the real rules from the script.</p><div id="watcher-panes" class="panes"></div><pre id="watcher-log" style="margin:10px 0 0;max-height:120px;overflow:auto;font-size:0.74rem">watcher running… monitoring messages/ and tasks.md</pre><div class="controls"><button class="btn" data-f="tasks">tasks.md</button><button class="btn" data-f="lead">messages/lead.md</button><button class="btn" data-f="coder1">messages/coder1.md</button><button class="btn" data-f="coder2">messages/coder2.md</button><button class="btn" data-f="reviewer">messages/reviewer.md</button></div></div>
+<p>This is a simple solution without any framework or message queue. A side effect is that all the messages are markdown files that I could read afterwards.</p>
+<div class="demo mini" id="mini-watcher"><p class="how">Click a file to simulate an agent writing to it. Every 3 seconds the watcher checks when the files were changed and types a message into the windows that need it. These rules are copied from the script.</p><div id="watcher-panes" class="panes"></div><pre id="watcher-log" style="margin:10px 0 0;max-height:120px;overflow:auto;font-size:0.74rem">watcher running… monitoring messages/ and tasks.md</pre><div class="controls"><button class="btn" data-f="tasks">tasks.md</button><button class="btn" data-f="lead">messages/lead.md</button><button class="btn" data-f="coder1">messages/coder1.md</button><button class="btn" data-f="coder2">messages/coder2.md</button><button class="btn" data-f="reviewer">messages/reviewer.md</button></div></div>
 
-<h2>Round 1: Snake</h2>
-<p>The warm-up was a Snake game, with Coder 1 alone. The timeline from the message files:</p>
+<h2>First round: Snake</h2>
+<p>The first task was a Snake game with only Coder 1. From the message files, the timeline was:</p>
 <table>
 <tr><th>Time</th><th>What happened</th></tr>
-<tr><td>23:50</td><td>Coder 1 posts a plan. The reviewer raises 5 issues, one marked <b>MUST FIX</b> (how deep the input queue is, so fast key presses can't reverse the snake into itself). Verdict: conditionally approved.</td></tr>
-<tr><td>23:55</td><td>Implementation done.</td></tr>
-<tr><td>23:58</td><td>Code review: approved, a few minor suggestions.</td></tr>
-<tr><td>after</td><td>A second review pass finds a real bug: a <b>false positive in tail self-collision</b>. Moving into the square the tail is just leaving was counted as a crash.</td></tr>
-<tr><td>00:05</td><td>Coder 1 fixes it.</td></tr>
-<tr><td>00:10</td><td>Final sign-off.</td></tr>
+<tr><td>23:50</td><td>Coder 1 posts a plan. The reviewer raises 5 issues, and one of them is marked as MUST FIX (how many key presses are queued, so that fast input cannot turn the snake back into itself). The plan is conditionally approved.</td></tr>
+<tr><td>23:55</td><td>The implementation is done.</td></tr>
+<tr><td>23:58</td><td>The code review approves it, with some minor suggestions.</td></tr>
+<tr><td>after</td><td>A second review finds a bug. Moving into the square the tail is just leaving was counted as hitting itself.</td></tr>
+<tr><td>00:05</td><td>Coder 1 fixes the bug.</td></tr>
+<tr><td>00:10</td><td>Final approval.</td></tr>
 </table>
-<p>About twenty minutes from plan to a reviewed, playable game of roughly 500 lines, including one real bug caught in review.</p>
+<p>It took about twenty minutes from the plan to a reviewed game of around 500 lines, and the review found one real bug.</p>
 
-<h2>Round 2: a maze game with two coders</h2>
-<p>The second round needed both coders working in parallel. The lead started by writing an <b>API contract</b> into <code>tasks.md</code> before anyone started. What the maze data looks like, what a character object has, which file exports what, and strict file ownership:</p>
+<h2>Second round: a maze game with two coders</h2>
+<p>The second round needed both coders to work in parallel. The lead started by writing an API contract in <code>tasks.md</code> before anyone began. It described what the maze data looks like, what a character object contains and which file exports what, and it gave each coder their own files:</p>
 <table>
 <tr><th>File</th><th>Owner</th><th>Lines</th></tr>
 <tr><td><code>maze.js</code></td><td>Coder 2</td><td>183</td></tr>
 <tr><td><code>entities.js</code></td><td>Coder 2</td><td>582</td></tr>
 <tr><td><code>game.js</code> + <code>index.html</code></td><td>Coder 1</td><td>757 + page</td></tr>
 </table>
-<p>Both coders posted plans that were fine on their own, and the reviewer rejected them anyway:</p>
+<p>Both coders posted plans that looked fine on their own, but the reviewer did not approve them:</p>
 <blockquote>NOT APPROVED — resolve contract gaps first. Both plans are solid individually but have critical integration mismatches.</blockquote>
-<p>The gaps were the kind of thing that breaks integration in human teams too: who is responsible for ending the "frightened" mode after a power pellet, and what happens to a character after it's been eaten. Once the contract was tightened, the plans were approved and both coders built in parallel. Even so, Coder 1 later needed an "integration fix" to align with the entity API, followed by a round of review fixes.</p>
+<p>The problems were in how the parts fit together. The plans did not agree on who ends the "frightened" mode after a power pellet, or on what happens to a character after it has been eaten. After the contract was updated, the plans were approved and the coders worked in parallel. Coder 1 still needed an integration fix later to match the entity API, and then a round of fixes from the review.</p>
 
-<h2>What the agents wrote</h2>
+<h2>Amount of text</h2>
 <div class="stats">
   <div class="stat"><b>8,685</b><span>words of review feedback</span></div>
   <div class="stat"><b>5,947</b><span>words of plans and status from the coders</span></div>
   <div class="stat"><b>462</b><span>words in the lead's briefing</span></div>
 </div>
-<p>The reviewer wrote more than everyone else combined.</p>
+<p>The reviewer wrote more than the others combined.</p>
 
-<h2>What I learned</h2>
-<ul>
-<li><b>Contracts first.</b> The integration problems were all at the boundaries between files. Writing the interface down before coding, and having someone check plans against it, caught them before they turned into bugs.</li>
-<li><b>Review catches real bugs.</b> The tail-collision bug would have shipped without a second pass.</li>
-<li><b>Roles drift unless you pin them.</b> Loading roles with Claude Code's <code>--agent</code> flag didn't reliably stop agents from wandering outside their job. A single-line <code>--append-system-prompt</code> with the role spelled out ("You NEVER write code…") held much better.</li>
-<li><b>Say "write it to a file".</b> The lead happily displayed its plan in its own chat, where nobody else could see it. Its launcher needed an explicit "You MUST use the Write tool to create tasks.md… If you don't write them, nobody works."</li>
-<li><b>Simple plumbing wins.</b> Starting new tmux windows that run a command directly was flaky; typing into existing windows with <code>send-keys</code> was reliable.</li>
-<li><b>Own files, not layers.</b> Two coders editing the same file is a merge conflict waiting to happen. File ownership kept them out of each other's way.</li>
-</ul>
-<p>Working with it felt more like managing a fast, slightly forgetful team than using a tool. Clear interfaces and file ownership mattered as much as they do with people.</p>
+<h2>Some things I learned</h2>
+<p>Most of the problems were at the boundaries between files, so writing down the interface before any coding started, and having someone check the plans against it, caught them early. The review also found a real bug in the Snake game, which would otherwise have been shipped.</p>
+<p>The agents did not always stay in their roles. Loading the roles with the <code>--agent</code> flag did not stop them from doing other things, while a single line with <code>--append-system-prompt</code> that spelled out the role ("You NEVER write code") worked much better. The lead also tended to show its plan in its own chat, where the others could not see it, so its launcher needed an explicit instruction to write <code>tasks.md</code> with the Write tool.</p>
+<p>On the practical side, opening new tmux windows that run a command directly was unreliable, while typing into existing windows with <code>send-keys</code> worked every time. Splitting the work by file, and not by layer, also kept the two coders from editing the same file.</p>
+<p>Overall it was more like managing a fast and slightly forgetful team than using a tool, and clear interfaces and file ownership mattered as much as they would with people.</p>
 
 <h2>Try it yourself</h2>
-<p>A simplified replay of one round of the workflow. Step through it to see who does what, and which files carry the messages between them.</p>
+<p>This is a simplified replay of one round. You can step through it to see who does what, and which files the messages go through.</p>
 
-<div class="demo"><p class="how"><b>Try:</b> press next step and read the caption. <b>Notice:</b> the agents never talk directly, only through files, and the reviewer has to approve before code is written.</p><canvas id="cv" aria-label="Watch the team work interactive demo"></canvas><div class="controls"><button id="prev" class="btn">← back</button><button id="next" class="btn primary">next step →</button><span class="readout" id="stepn"></span></div><p id="cap" class="note-small" style="margin:12px 2px 0;min-height:3em"></p></div>
+<div class="demo"><p class="how">Press next step and read the text under the figure. The agents only communicate through files, and the reviewer has to approve a plan before any code is written.</p><canvas id="cv" aria-label="Watch the team work interactive demo"></canvas><div class="controls"><button id="prev" class="btn">← back</button><button id="next" class="btn primary">next step →</button><span class="readout" id="stepn"></span></div><p id="cap" class="note-small" style="margin:12px 2px 0;min-height:3em"></p></div>
 
 <!--DEMO-->
 </article>
-  <div class="next"><a href="held-together-by-tension.html">← Held together by tension</a><a href="cells-that-organise-themselves.html">Cells that organise themselves →</a></div>
+  <div class="next"><a href="held-together-by-tension.html">← How does a tensegrity structure find its shape?</a><a href="cells-that-organise-themselves.html">How do molecules form droplets without a membrane? →</a></div>
 </main>
 <footer class="wrap"><span>© 2026 Yawar Mahmood</span></footer>
 <script src="../theme.js"></script>
@@ -129,12 +124,12 @@ const files = ['tasks.md', 'messages/', 'maze.js', 'entities.js', 'game.js'];
 const steps = [
   { from: 'you', to: 'lead', file: null, text: 'You describe the goal to the lead: a small maze game in the browser.' },
   { from: 'lead', to: null, file: 'tasks.md', text: 'The lead writes tasks.md: an API contract (what the maze and the characters look like) and who owns which file.' },
-  { from: 'tasks.md', to: 'coder 1', file: null, text: 'The watcher script notices tasks.md changed and types a nudge into each coder\'s tmux window.', also: 'coder 2' },
-  { from: 'coder 1', to: null, file: 'maze.js', text: 'Coder 1 builds the maze, following the contract.', also2: ['coder 2', 'entities.js'] },
-  { from: 'coder 1', to: null, file: 'messages/', text: 'Both coders report back by writing to messages/. Nobody talks in their own chat.' },
-  { from: 'messages/', to: 'reviewer', file: null, text: 'The lead asks the reviewer to look at the code. The reviewer never writes code itself.' },
-  { from: 'reviewer', to: null, file: 'messages/', text: 'The reviewer writes its notes to messages/, and the watcher nudges whoever needs to act.' },
-  { from: 'coder 1', to: null, file: 'game.js', text: 'A coder glues the pieces together in the game loop. The lead updates tasks.md, and the next round starts.' },
+  { from: 'tasks.md', to: 'coder 1', file: null, text: 'The watcher script sees that tasks.md has changed and types a message into the tmux window of each coder.', also: 'coder 2' },
+  { from: 'coder 2', to: null, file: 'maze.js', text: 'Coder 2 builds the maze and the characters in maze.js and entities.js, following the contract.', also2: ['coder 2', 'entities.js'] },
+  { from: 'coder 1', to: null, file: 'messages/', text: 'Both coders report back by writing to messages/, so that the others can read it.' },
+  { from: 'messages/', to: 'reviewer', file: null, text: 'The lead asks the reviewer to look at the code. The reviewer only gives feedback and does not write code.' },
+  { from: 'reviewer', to: null, file: 'messages/', text: 'The reviewer writes its notes to messages/, and the watcher sends a message to the agents that need to act.' },
+  { from: 'coder 1', to: null, file: 'game.js', text: 'Coder 1 writes the game loop in game.js, which uses the maze and the characters. The lead updates tasks.md, and the next round starts.' },
 ];
 let k = 0;
 function draw() {
